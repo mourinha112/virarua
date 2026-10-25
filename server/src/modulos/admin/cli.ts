@@ -16,6 +16,7 @@ import { PAPEIS, type Papel } from './auth';
 import { hashSenha, senhaFraca } from './login';
 import { provisionar } from '../mundo/provisionar';
 import { gerarLinkEntrada } from './link-entrada';
+import { patrocinarDeArquivo } from './patrocinar';
 
 /** lê uma linha do terminal sem ecoar (senha) */
 let _linhas: Promise<string[]> | null = null;
@@ -104,6 +105,11 @@ async function main(a: string[]) {
     const r = await casaManual(user, Number(papel), motivo || 'casa criada pelo operador');
     console.log(`${r.nova ? 'casa criada' : 'a casa já existia'}: @${user.replace(/^@/, '').toLowerCase()} em ${r.cidade}, lote ${r.lote}`);
   }
+  else if (cmd === 'patrocinar') {
+    if (!user) throw new Error('uso: patrocinar <arquivo.json>');
+    const r = await patrocinarDeArquivo(resolve(user));
+    console.log((r.novo ? 'patrocínio criado' : 'loja atualizada (patrocínio já vigente)') + ': ' + r.cidade + ', no mapa até ' + r.fim.split('-').reverse().join('/'));
+  }
   else if (cmd === 'link-entrada') {
     const t = await gerarLinkEntrada(user || '');
     console.log('abra em até 15 min (vale uma vez): ' + config.urlPublica.replace(/\/+$/, '') + '/api/entrar-link?t=' + t);
@@ -114,7 +120,7 @@ async function main(a: string[]) {
     const t = tokenForte(32);
     await q(`insert into sessions (user_id, token_hash, expira_em, ua) values ($1, $2, now() + interval '2 hours', 'cli sessao-dev')`, [user, sha256(t)]);
     console.log(`document.cookie = "smn_sess=${t}; path=/"   (cole no console do navegador em http://localhost:5173/admin.html)`);
-  } else { console.log('uso: conceder|revogar <userId> <papel> "<motivo>" · papeis · criar-admin <login> · casa <@handle> <ibge> "<motivo>" · link-entrada <@handle> · sessao-dev <userId>'); return; }
+  } else { console.log('uso: conceder|revogar <userId> <papel> "<motivo>" · papeis · criar-admin <login> · casa <@handle> <ibge> "<motivo>" · link-entrada <@handle> · patrocinar <arquivo.json> · sessao-dev <userId>'); return; }
   console.log('ok');
 }
 

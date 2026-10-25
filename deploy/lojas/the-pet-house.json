@@ -1,0 +1,22 @@
+{
+  "slug": "the-pet-house",
+  "nome": "The Pet House",
+  "categoria": "pet",
+  "ibge": 3301702,
+  "descricao": "Rações, medicamentos, petiscos e acessórios. Tudo que seu pet precisa, em Santa Cruz da Serra.",
+  "cor": "#d62828",
+  "endereco": "Av. Automóvel Clube, 1241, Lj C · Santa Cruz da Serra, Duque de Caxias - RJ",
+  "telefone": "21997663979",
+  "logo": {
+    "arquivo": "the-pet-house.png",
+    "licenca": "logo da própria loja, uso autorizado pelo responsável para o mapa do jogo",
+    "declarado_por": "Anderson Moura (responsável pela loja)"
+  },
+  "links": [
+    { "tipo": "instagram", "url": "https://www.instagram.com/thepethouse.vilas/", "rotulo": "Instagram" },
+    { "tipo": "whatsapp", "url": "https://wa.me/5521997663979", "rotulo": "WhatsApp" },
+    { "tipo": "mapa", "url": "https://www.google.com/maps/search/?api=1&query=The+Pet+House+Av.+Autom%C3%B3vel+Clube+1241+Santa+Cruz+da+Serra+Duque+de+Caxias", "rotulo": "Como chegar" }
+  ],
+  "dias": 20,
+  "contrato": "patrocinio-20-dias-the-pet-house"
+}

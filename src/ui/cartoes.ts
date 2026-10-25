@@ -181,8 +181,11 @@ export function cartaoLoja(ctx: Ctx, l: import('../dados/formato').Loja) {
   const cart = el('div', 'cart loja');
   cart.append(botaoFechar(() => ctx.fecharCartao()));
   // cabeçalho: logo em quadrado arredondado (iniciais na cor da marca) + nome + tipo/cidade
-  const cab = el('div', 'loja-cab');
-  const logo = el('div', 'loja-logo'); logo.style.background = l.cor; logo.textContent = l.nome.split(/s+/).filter((p) => p.length > 2 || /^[A-Z]/.test(p)).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
+  const cab = el('div', 'loja-cab'); cart.style.setProperty('--marca', l.cor);
+  if (l.logo) cart.classList.add('com-logo');
+  const logo = el('div', 'loja-logo'); logo.style.background = l.cor;
+  if (l.logo) { const im = el('img') as HTMLImageElement; im.src = l.logo; im.alt = 'logo ' + l.nome; im.loading = 'lazy'; logo.append(im); logo.style.background = '#fff'; }
+  else logo.textContent = l.nome.split(/\s+/).filter((p) => p.length > 2 || /^[A-Z]/.test(p)).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
   const tt = el('div', 'loja-tt'); tt.append(el('h2', 'ct-h1', l.nome));
   const sub = el('div', 'ct-sub'); sub.append(el('span', '', TIPO_NOME[l.tipo] || l.tipo), el('span', 'sep', '·'));
   if (c) sub.append(botao('lk', c.nome, () => ctx.mostrarCidade(c)), el('span', 'sep', '›'), botao('lk', c.uf, () => ctx.mostrarEstado(c.uf)));
@@ -197,6 +200,22 @@ export function cartaoLoja(ctx: Ctx, l: import('../dados/formato').Loja) {
   const pat = el('div', 'loja-pat'); pat.innerHTML = ICONES.loja; pat.append(el('b', 'etiq ink', 'patrocinado'), el('span', '', 'no mapa até ' + l.ate.split('-').reverse().slice(0, 2).join('/')));
   cart.append(pat);
   cart.append(el('p', 'loja-desc', l.desc));
+  // loja de verdade: endereço, como chegar, horário e WhatsApp
+  if (l.end || l.zap || l.hor) {
+    const inf = el('div', 'loja-info');
+    if (l.end) {
+      const lin = el('div', 'li'); lin.append(el('span', 'ic', '📍'), el('span', '', l.end));
+      const mapa = el('a', 'btn mini') as HTMLAnchorElement; mapa.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nome + ' ' + l.end); mapa.target = '_blank'; mapa.rel = 'noopener nofollow'; mapa.textContent = 'como chegar';
+      lin.append(mapa); inf.append(lin);
+    }
+    if (l.hor) { const lin = el('div', 'li'); lin.append(el('span', 'ic', '🕘'), el('span', '', l.hor)); inf.append(lin); }
+    if (l.zap) {
+      const z = el('a', 'btn bloco loja-zap') as HTMLAnchorElement; z.href = 'https://wa.me/' + l.zap + '?text=' + encodeURIComponent('Oi! Vi a ' + l.nome + ' no mapa do Seu Mundo Novo 🐾'); z.target = '_blank'; z.rel = 'noopener nofollow sponsored';
+      z.append(el('b', '', 'chamar no WhatsApp'), el('small', '', '(' + l.zap.slice(2, 4) + ') ' + l.zap.slice(4, -4) + '-' + l.zap.slice(-4)));
+      inf.append(z);
+    }
+    cart.append(inf);
+  }
   if (l.ig) {
     const a = el('a', 'btn prim bloco loja-seguir'); a.href = 'https://www.instagram.com/' + l.ig + '/'; a.target = '_blank'; a.rel = 'noopener nofollow sponsored';
     a.append(el('b', '', 'seguir @' + l.ig), el('small', '', 'no Instagram · +' + PONTOS.seguirLoja + ' pts'));

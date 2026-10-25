@@ -462,3 +462,15 @@ body.achou .jornal-fab { display: none; }
 
 /* modo filme (?filme): só o mundo 3D, nenhuma interface por cima */
 html.filme body > *:not(#app), html.filme #app > *:not(#gl) { display: none !important; }
+/* card de loja real: logo grande, faixa na cor da marca, endereço e WhatsApp */
+.cart.loja.com-logo { border-top: 10px solid var(--marca, var(--ink)); }
+.cart.loja.com-logo .loja-logo { width: 84px; height: 84px; border-radius: 22px; overflow: hidden; padding: 2px; }
+.loja-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cart.loja.com-logo .ct-h1 { color: var(--marca); }
+.loja-info { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }
+.loja-info .li { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; color: #3a404c; }
+.loja-info .li .ic { font-size: 18px; flex: none; }
+.loja-info .li span:nth-child(2) { flex: 1; min-width: 0; }
+.loja-zap { background: #25d366; color: #fff; display: flex; flex-direction: column; align-items: center; text-decoration: none; }
+.loja-zap small { font-weight: 700; opacity: .9; }
+@media (max-width: 640px) { .cart.loja.com-logo .loja-logo { width: 68px; height: 68px; border-radius: 18px; } }

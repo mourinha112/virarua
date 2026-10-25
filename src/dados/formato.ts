@@ -29,4 +29,6 @@ export type PacoteMundo = {
 export type Loja = {
   id: string; nome: string; tipo: string; ibge: number; cor: string; desc: string;
   ate: string; ig?: string; site?: string; patrocinado: true;
+  /** logo licenciado (caminho público), endereço comercial, horário e WhatsApp (só dígitos, com DDI) */
+  logo?: string; end?: string; hor?: string; zap?: string;
 };

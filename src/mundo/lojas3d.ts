@@ -98,15 +98,26 @@ export function criarLoja3D(l: Loja, A: (hex: string) => T.Color): T.Group {
   // letreiro
   const sl = new T.Mesh(new T.PlaneGeometry(1.36, 0.34), new T.MeshBasicMaterial({ map: letreiro(l.nome, l.cor), toneMapped: false }));
   sl.position.set(0, 0.88, 0.562); g.add(sl);
+  // logo de verdade da loja: placa no telhado (no lugar do mascote genérico)
+  if (l.logo) {
+    const tx = new T.TextureLoader().load(l.logo); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4;
+    const pl = new T.Mesh(new T.PlaneGeometry(1.3, 1.3), new T.MeshBasicMaterial({ map: tx, transparent: true, alphaTest: 0.4, toneMapped: false, side: T.DoubleSide }));
+    pl.position.set(0, 1.86, -0.12); g.add(pl);
+    const hastes: Parte[] = [-0.42, 0.42].map((x) => ({ pos: caixa(x - 0.03, 1.13, -0.18, x + 0.03, 1.5, -0.12), cor: '#3a404c' }));
+    g.add(new T.Mesh(juntar(hastes), mat));
+  }
   // mascote
   let masc: Parte[] = [];
-  if (l.tipo === 'pet') { masc = [...cachorro().map((p) => ({ ...p, pos: mover(p.pos, -0.28, 0, 0) })), ...gato().map((p) => ({ ...p, pos: mover(p.pos, 0.36, 0, -0.15) })), ...osso().map((p) => ({ ...p, pos: mover(p.pos, 0.05, 0, 0.32) })), { pos: cilindro(0.09, 0.07, 0.05, 10, 0, -0.45, 0.35), cor: '#2a9db0' }, { pos: esfera(0.07, -0.45, 0.05, 0.35, 1, 0.3, 1), cor: '#6b3b1f' }]; }
+  if (l.logo) masc = [];
+  else if (l.tipo === 'pet') { masc = [...cachorro().map((p) => ({ ...p, pos: mover(p.pos, -0.28, 0, 0) })), ...gato().map((p) => ({ ...p, pos: mover(p.pos, 0.36, 0, -0.15) })), ...osso().map((p) => ({ ...p, pos: mover(p.pos, 0.05, 0, 0.32) })), { pos: cilindro(0.09, 0.07, 0.05, 10, 0, -0.45, 0.35), cor: '#2a9db0' }, { pos: esfera(0.07, -0.45, 0.05, 0.35, 1, 0.3, 1), cor: '#6b3b1f' }]; }
   else if (l.tipo === 'cafe') masc = xicara();
   else if (l.tipo === 'lanchonete' || l.tipo === 'restaurante') masc = hamburguer();
   else if (l.tipo === 'acai') masc = acai();
   else masc = sacola(l.cor);
-  const mm = new T.Mesh(juntar(masc), new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, flatShading: true }));
-  mm.position.set(0, 1.13, -0.05); mm.scale.setScalar(1.25); mm.userData.anima = 'flutua'; g.add(mm);
+  if (masc.length) {
+    const mm = new T.Mesh(juntar(masc), new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, flatShading: true }));
+    mm.position.set(0, 1.13, -0.05); mm.scale.setScalar(1.25); mm.userData.anima = 'flutua'; g.add(mm);
+  }
   // pino azul com estrela (sprite sempre virado para a câmera)
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 96; const k = cv.getContext('2d')!;
   k.fillStyle = '#1e2430'; k.fillRect(30, 50, 4, 44);
