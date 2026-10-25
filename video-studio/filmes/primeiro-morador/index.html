@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Primeiro morador</title>
+<meta name="viewport" content="width=1080, height=1920">
+<!-- Filme motionmaxxing (runtime/ = runtime da skill, commit 8c8ec0f). O chão é o JOGO DE VERDADE: o iframe abre o jogo
+     (npm run dev, porta 5173) em ?filme e cada quadro é pedido por postMessage com o estado da câmera e o tempo t.
+     Abrir este arquivo direto (file://) pelo render.mjs; o jogo precisa estar rodando. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@800;900&display=block" rel="stylesheet">
+<style>
+/* UMA cor de destaque com UM significado: AMARELO = "o lugar que você pode ser o primeiro" (palavra-chave da frase e da legenda falada agora) */
+:root { --ink: #1e2430; --yellow: #ffd23f; --paper: #fff8e1; --font: "Lilita One", "Nunito", sans-serif; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+#main { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; background: #a1d3ed; font-family: var(--font); }
+#jogo { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; border: 0; }
+/* letreiro: branco com contorno de tinta e sombra dura, a gramática do próprio jogo (borda 3px + sombra 0 4px 0) ampliada */
+.t { color: #fff; -webkit-text-stroke: 11px var(--ink); paint-order: stroke fill; text-shadow: 0 8px 0 var(--ink); letter-spacing: .5px; }
+.y { color: var(--yellow); }
+.linha { position: absolute; left: 0; width: 1080px; text-align: center; white-space: pre; }
+#pillW { position: absolute; left: 0; top: 118px; width: 1080px; text-align: center; }
+#pill { display: inline-block; padding: 14px 30px 12px; border-radius: 40px; background: var(--ink); color: #fff; font: 900 31px/1 "Nunito", sans-serif; letter-spacing: .3px; box-shadow: 0 5px 0 rgba(0,0,0,.25); }
+#pill b { color: var(--yellow); font-weight: 900; }
+#hA { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+#hA .linha { font-size: 104px; line-height: 112px; }
+#hB .linha { font-size: 96px; line-height: 106px; }
+.cap { position: absolute; left: 0; top: 1330px; width: 1080px; text-align: center; white-space: pre; font-size: 74px; line-height: 84px; }
+#balaoPos { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+#balao { position: absolute; left: -330px; bottom: 26px; width: 660px; text-align: center; }
+#balao .card { display: inline-block; padding: 18px 34px 16px; background: #fff; border: 5px solid var(--ink); border-radius: 30px; box-shadow: 0 8px 0 var(--ink); }
+#balao .h { font: 900 46px/1.05 "Nunito", sans-serif; color: var(--ink); }
+#balao .c { font: 800 30px/1.2 "Nunito", sans-serif; color: #59606e; margin-top: 4px; }
+#balao .rabo { position: absolute; left: 50%; bottom: -24px; width: 34px; height: 34px; margin-left: -17px; background: #fff; border-right: 5px solid var(--ink); border-bottom: 5px solid var(--ink); transform: rotate(45deg); }
+#marca { position: absolute; left: 0; top: 1668px; width: 1080px; display: flex; justify-content: center; align-items: center; gap: 16px; font-size: 46px; }
+#marca svg { width: 60px; height: 60px; filter: drop-shadow(0 5px 0 var(--ink)); }
+</style>
+</head>
+<body>
+<div id="main">
+  <iframe id="jogo" src="http://localhost:5173/?filme&hora=12" scrolling="no"></iframe>
+
+  <div id="pillW"><span id="pill">COMENTA TUA CIDADE: <b>GANHA UMA CASA COM TEU @</b></span></div>
+
+  <!-- gancho: a pergunta que o filme responde -->
+  <div id="hA">
+    <div id="hA1" class="linha t" style="top:196px">QUEM VAI SER O</div>
+    <div id="hA2" class="linha t y" style="top:308px">PRIMEIRO MORADOR</div>
+    <div id="hA3" class="linha t" style="top:420px">DA SUA CIDADE?</div>
+  </div>
+  <!-- chamada: entra junto com "Comenta" -->
+  <div id="hB">
+    <div id="hB1" class="linha t" style="top:200px">COMENTA SUA CIDADE</div>
+    <div id="hB2" class="linha t y" style="top:306px">SEJA O PRIMEIRO DE LÁ</div>
+  </div>
+
+  <!-- balão preso à casa (posição projetada do 3D a cada quadro) -->
+  <div id="balaoPos"><div id="balao"><div class="card"><div class="h" id="bH">@</div><div class="c" id="bC">cidade</div></div><div class="rabo"></div></div></div>
+
+  <div id="caps"></div>
+
+  <div id="marca" class="t">
+    <svg viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#78ad54" stroke="#1e2430" stroke-width="4"/><circle cx="32" cy="34" r="22" fill="#4fb7f0" opacity=".35"/><path d="M12 32 32 14l20 18v18H12z" fill="#fff" stroke="#1e2430" stroke-width="4" stroke-linejoin="round"/><path d="M26 50V38h12v12" fill="#FFD23F" stroke="#1e2430" stroke-width="4" stroke-linejoin="round"/></svg>
+    <span>SEU MUNDO NOVO</span>
+  </div>
+</div>
+
+<script src="./runtime/vendor/gsap.min.js"></script>
+<script src="./runtime/motion.js"></script>
+<script src="./beats.js"></script>
+<script>
+/* SEEK CONTRACT: tudo visível é função pura de t. O mundo 3D também: __filme.quadro(estado, t) não acumula nada. */
+const CFG = Object.assign({ ibge: 2708709, arroba: null }, Object.fromEntries(new URLSearchParams(location.search)));
+CFG.ibge = Number(CFG.ibge);
+const FPS = 30, DUR = 13;
+const M = Motion.film({ fps: FPS, duration: DUR, width: 1080, height: 1920, clock: 'smooth' });
+const E = Motion.ease, W = window.BEATS.words, L = window.BEATS.lines;
+const on = (i) => W[i].onsetFrame;
+
+/* ------------------------------------------------------------------ texto */
+// pílula: a oferta, entra junto com o primeiro quadro já em movimento
+M.enter('#pill', { at: 0, frames: 9, ease: 'softLand', from: { y: -40, scale: 1.25 } });
+// gancho em 3 linhas, ritmo rápido de gancho (2-4 f entre palavras); a linha amarela chega de maior que o natural
+M.words('#hA1', { at: 1, mech: 'rise', dist: 50, gaps: 3, frames: 9, ease: 'softLand' });
+M.words('#hA2', { at: 8, mech: 'rise', dist: 40, gaps: 4, frames: 11, ease: 'snapSettle', words: () => ({ scale: 1.3 }) });
+M.words('#hA3', { at: 15, mech: 'rise', dist: 50, gaps: 3, frames: 9, ease: 'softLand' });
+// ao chegar na cidade o gancho encolhe para o topo: a imagem vira o herói
+const hA = M.wrap('#hA');
+M.kf(hA, 'scale', [[0, 1], [100, 1], [112, .64, 'softLand']]);
+M.kf(hA, 'y', [[0, 0], [100, 0], [112, 6, 'softLand']]);
+hA.style.transformOrigin = '540px 196px';
+// sai acelerando quando a chamada entra
+M.exit('#hA', { at: on(23) - 8, frames: 8, ease: 'accelExit', to: { y: -160, scale: .9 }, hide: true });
+M.words('#hB1', { at: on(23), mech: 'rise', dist: 70, gaps: 3, frames: 10, ease: 'softLand' });
+M.words('#hB2', { at: on(28), mech: 'rise', dist: 40, gaps: 4, frames: 11, ease: 'snapSettle', words: () => ({ scale: 1.3 }) });
+
+// legendas faladas (karaokê): blocos de 2-4 palavras, a palavra dita agora fica amarela
+const BLOCOS = [[0, 3], [4, 5], [6, 8], [9, 12], [13, 16], [17, 19], [20, 22], [23, 26], [27, 30], [31, 32]];
+const caps = document.getElementById('caps');
+const TOK = L.flatMap((l) => l.text.split(/\s+/).filter(Boolean));   // mesmas 33 palavras, com a pontuação do roteiro
+BLOCOS.forEach(([a, b], k) => {
+  const el = document.createElement('div'); el.className = 'cap t'; el.id = 'cap' + k;
+  for (let i = a; i <= b; i++) {
+    const s = document.createElement('span'); s.id = 'w' + i; s.textContent = (TOK[i] || W[i].word).toUpperCase() + (i < b ? ' ' : '');
+    el.appendChild(s);
+  }
+  caps.appendChild(el);
+  const ini = on(a), prox = k + 1 < BLOCOS.length ? on(BLOCOS[k + 1][0]) : 0;
+  const fimLinha = L.find((l) => a >= l.firstWord && a <= l.lastWord).endFrame + 6;
+  const fim = prox && prox - ini < 60 && prox <= fimLinha + 2 ? prox : fimLinha;
+  M.enter(el, { at: ini, frames: 6, ease: 'softLand', from: { y: 22, scale: 1.14 } });
+  M.show(el, ini, fim);
+  for (let i = a; i <= b; i++) {
+    const f0 = on(i), f1 = i < b ? on(i + 1) : fim;
+    M.kf('#w' + i, 'color', [[0, '#ffffff'], [f0, '#ffffff'], [f0, '#ffd23f'], [f1, '#ffd23f'], [f1, '#ffffff']]);
+  }
+});
+
+// balão do primeiro morador: chega de 2x no "São", sai acelerando no "Comenta"
+M.enter('#balao', { at: on(9), frames: 12, ease: 'snapSettle', from: { scale: 2.1, y: -60 } });
+document.getElementById('balao').style.transformOrigin = '50% 100%';
+M.exit('#balao', { at: on(23) - 4, frames: 8, ease: 'accelExit', to: { scale: .3, y: 30 }, hide: true });
+
+// marca: entra uma vez e respira
+M.enter('#marca', { at: 6, frames: 10, ease: 'softLand', from: { y: 30 } });
+M.mark(30, 'dive', 'mergulho no Brasil');
+M.mark(102, 'snap', 'chega na cidade');
+M.mark(249, 'whip', 'recua para o mapa');
+
+/* ------------------------------------------------------------------ câmera do jogo (estado puro de t) */
+let BR = null, CID = null, CASA = null;
+const lerp = (a, b, u) => a + (b - a) * u, cl = (x) => Math.max(0, Math.min(1, x));
+const seg = (t, a, b, ease) => (ease || ((x) => x))(cl((t - a) / (b - a)));
+function camera(t) {
+  const ldBR = BR.ld, T = { x: CASA.x + 0.2, y: CASA.y + 1.1 };   // mira além da casa: ela fica abaixo do centro e o balão no meio da tela, longe do título
+  const ldPerto = Math.log(11.5), ldFim = Math.log(7.4);
+  let ld, phi, psi, fx, fy;
+  if (t < 1.0) {                                   // mapa já em movimento
+    ld = lerp(ldBR + 0.06, ldBR - 0.18, seg(t, 0, 1.0));
+    phi = 64; psi = 0; fx = BR.fx; fy = BR.fy;
+  } else if (t < 3.4) {                            // mergulho: oitava constante acelerando, pouso longo
+    const u = seg(t, 1.0, 3.4, E.softInOut);
+    ld = lerp(ldBR - 0.18, ldPerto, u);
+    const k = cl((Math.exp(ld) - Math.exp(ldPerto)) / (Math.exp(ldBR - 0.18) - Math.exp(ldPerto)));   // foco ancorado: a cidade fica no lugar da tela
+    fx = T.x + (BR.fx - T.x) * k; fy = T.y + (BR.fy - T.y) * k;
+    phi = lerp(64, 36, seg(t, 1.6, 3.4, E.softLand)); psi = lerp(0, -40, seg(t, 1.8, 3.4, E.softLand));
+  } else if (t < 8.3) {                            // órbita lenta: nunca para
+    const u = seg(t, 3.4, 8.3);
+    ld = lerp(ldPerto, ldFim, seg(t, 3.4, 8.3, E.softInOut));
+    psi = lerp(-40, 30, u); phi = lerp(36, 29, u);
+    fx = lerp(T.x, CASA.x + 0.1, seg(t, 3.4, 7.0, E.softInOut)); fy = lerp(T.y, CASA.y + 0.9, seg(t, 3.4, 7.0, E.softInOut));
+  } else if (t < 11.4) {                           // recuo: sai acelerando, pousa no mapa
+    const u = seg(t, 8.3, 11.4, E.softInOut);
+    ld = lerp(ldFim, ldBR + 0.04, u);
+    const k = cl((Math.exp(ld) - Math.exp(ldFim)) / (Math.exp(ldBR + 0.04) - Math.exp(ldFim)));
+    const ax = CASA.x + 0.1, ay = CASA.y + 0.9;
+    fx = ax + (BR.fx - ax) * k; fy = ay + (BR.fy - ay) * k;
+    phi = lerp(29, 64, seg(t, 8.3, 10.6, E.softInOut)); psi = lerp(30, 0, seg(t, 8.3, 10.6, E.softInOut));
+  } else {                                         // mapa respirando até o fim
+    ld = lerp(ldBR + 0.04, ldBR - 0.04, seg(t, 11.4, DUR)); phi = 64; psi = 0; fx = BR.fx; fy = BR.fy;
+  }
+  return { fx, fy, ld, phi, psi };
+}
+
+/* ------------------------------------------------------------------ ligação com o jogo (postMessage: o filme é file://, o jogo é http) */
+const ifr = document.getElementById('jogo'), pend = new Map(); let seq = 0;
+addEventListener('message', (e) => { const m = e.data; if (m && pend.has(m.id)) { pend.get(m.id)(m.r); pend.delete(m.id); } });
+const pedir = (msg) => new Promise((res) => { const id = ++seq; pend.set(id, res); ifr.contentWindow.postMessage({ ...msg, id }, '*'); });
+const balaoPos = document.getElementById('balaoPos');
+async function desenhar(t) {
+  const [[px, py]] = await pedir({ filme: 'quadro', st: camera(t), t, fps: FPS, pontos: [[CASA.x, CASA.y, 1.35]] });
+  balaoPos.style.left = px.toFixed(1) + 'px'; balaoPos.style.top = py.toFixed(1) + 'px';
+}
+const seekMotion = window.__seek;
+window.__seek = async (t) => { seekMotion(t); if (CID) await desenhar(t); };
+
+const carregou = new Promise((res) => ifr.addEventListener('load', res, { once: true }));
+// o jogo responde 'preparar' quando os dados e a cidade estão prontos (tenta de novo até o módulo do jogo existir)
+const preparar = async () => { for (;;) { const r = await Promise.race([pedir({ filme: 'preparar', ibge: CFG.ibge, n: 14 }), new Promise((x) => setTimeout(x, 1500))]); if (r) return r; } };
+window.__ready = Promise.all([Motion.loaded(), carregou]).then(preparar).then(async (r) => {
+  CID = r.cidade; CASA = CID.casas[0]; BR = r.brasil;
+  document.getElementById('bH').textContent = '@' + (CFG.arroba || CASA.handle);
+  document.getElementById('bC').textContent = CID.nome + ' · ' + CID.uf;
+  await window.__seek(0);
+});
+</script>
+</body>
+</html>

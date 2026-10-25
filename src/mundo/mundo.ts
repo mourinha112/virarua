@@ -1,7 +1,7 @@
 /* O mundo 3D: renderer, cena, luz, céu, mar, continente, divisas, rios, câmera e entrada. */
 import * as T from 'three';
 import { Camera } from './camera';
-import { BOX_CONT, TERRENO, criarContinente } from './terreno';
+import { BOX_CONT, COSTA, TERRENO, criarContinente } from './terreno';
 import { fita, UPX, type Linha } from './fitas';
 import { criarMata } from './arvores';
 import { criarNuvens } from './nuvens';
@@ -76,7 +76,7 @@ export function criarMundo(canvas: HTMLCanvasElement) {
 
   /* ---- divisas, costa e rios (fitas com largura mínima em px) ---- */
   const divLinhas: Linha[] = TERRENO.ufs.flatMap((u) => u.polys.map((p) => ({ pts: p.o, hw: 0.08, fechada: true })));
-  const costaLinhas: Linha[] = TERRENO.costa.map((a) => ({ pts: a, hw: 0.22, fechada: true }));
+  const costaLinhas: Linha[] = COSTA.map((c) => ({ pts: c.pts, hw: 0.22, fechada: c.fechada }));
   const rioW = (r: number) => (r <= 3 ? 1.3 : r <= 6 ? 0.8 : 0.45);
   const RIOS = TERRENO.rios.filter((r) => r.r <= 6);
   const riosAreia: Linha[] = RIOS.map((r) => ({ pts: r.p, hw: rioW(r.r) + 0.45 }));

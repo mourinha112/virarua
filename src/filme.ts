@@ -26,5 +26,12 @@ export function ativarFilme(mundo: Mundo, app: Promise<unknown>) {
     projetar(x: number, y: number, alt = 0) { return mundo.camera.projetar(x, y, alt); },
   };
   w.__filme = api;
+  // ponte para o filme que roda em outra origem (file://): cada pedido responde quando o quadro já está desenhado
+  addEventListener('message', async (e) => {
+    const m = e.data; if (!m || typeof m !== 'object' || typeof m.filme !== 'string') return;
+    const responder = (r: unknown) => (e.source as Window | null)?.postMessage({ id: m.id, r }, { targetOrigin: '*' });
+    if (m.filme === 'preparar') { await api.pronto; api.fixar(m.ibge, m.n ?? 14); responder({ cidade: api.cidade(m.ibge), brasil: api.brasil() }); }
+    else if (m.filme === 'quadro') { api.quadro(m.st, m.t, m.fps); responder((m.pontos || []).map((p: number[]) => api.projetar(p[0], p[1], p[2] ?? 0))); }
+  });
   return api;
 }

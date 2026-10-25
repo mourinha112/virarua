@@ -81,12 +81,47 @@ const muns: Mun[] = (raw('municipios.json') as any[]).map((m) => {
   return [m.codigo_ibge, m.nome, uf, x, y, pop.get(m.codigo_ibge) || 0, m.capital ? 1 : 0] as Mun;
 }).sort((a, b) => a[0] - b[0]);
 
-/* ---- costa + fronteira: contorno do país (IBGE), separado em trechos que tocam o mar ou não ---- */
-const pais = raw(existe('br_pais_max.geojson') ? 'br_pais_max.geojson' : 'br_pais.geojson');
+/* ---- costa + fronteira: bordas das UFs que NÃO são compartilhadas com outra UF (coordenadas brutas do IBGE).
+   O contorno do país inclui águas interiores (ex.: Baía de Guanabara) como território; as UFs não. Assim a faixa
+   de areia segue baías, lagoas e ilhas exatamente como a terra desenhada. Anéis fechados repetem o 1º ponto no fim. */
+const chave = (p: number[]) => p[0].toFixed(7) + ',' + p[1].toFixed(7);
+const aneisUF: number[][][] = [];
+for (const f of geo.features) {
+  const rs: number[][][][] = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  for (const poly of rs) for (const ring of poly) aneisUF.push(ring);
+}
+const usoAresta = new Map<string, number>();
+const kA = (a: string, b: string) => (a < b ? a + '|' + b : b + '|' + a);
+for (const r of aneisUF) for (let k = 0; k + 1 < r.length; k++) { const id = kA(chave(r[k]), chave(r[k + 1])); usoAresta.set(id, (usoAresta.get(id) || 0) + 1); }
+let trechos: number[][][] = [];
+for (const r of aneisUF) {
+  const livre = (k: number) => usoAresta.get(kA(chave(r[k]), chave(r[k + 1]))) === 1;
+  const n = r.length - 1; // último ponto = primeiro
+  if (n < 3) continue;
+  let ini = -1; for (let k = 0; k < n; k++) if (!livre(k)) { ini = k; break; }
+  if (ini < 0) { trechos.push(r.slice()); continue; } // anel inteiro é costa (ilha)
+  let atual: number[][] = [];
+  for (let t = 1; t <= n; t++) {
+    const k = (ini + t) % n;
+    if (livre(k)) { if (!atual.length) atual.push(r[k]); atual.push(r[k + 1]); }
+    else if (atual.length) { trechos.push(atual); atual = []; }
+  }
+  if (atual.length) trechos.push(atual);
+}
+// junta trechos que se tocam nas pontas (costa de uma UF continua na vizinha)
+for (let mudou = true; mudou;) {
+  mudou = false;
+  const fim = new Map<string, number>(); trechos.forEach((t, i) => { if (chave(t[0]) !== chave(t[t.length - 1])) fim.set(chave(t[t.length - 1]), i); });
+  for (let i = 0; i < trechos.length && !mudou; i++) {
+    const t = trechos[i]; if (chave(t[0]) === chave(t[t.length - 1])) continue;
+    const j = fim.get(chave(t[0]));
+    if (j !== undefined && j !== i) { trechos[j] = trechos[j].concat(t.slice(1)); trechos.splice(i, 1); mudou = true; }
+  }
+}
 const costa: [number, number][][] = [];
-for (const poly of pais.features[0].geometry.coordinates as number[][][][]) {
-  const anel = simplificar(poly[0].map(([lon, lat]) => proj(lat, lon)), TOL_COSTA);
-  if (anel.length >= 4) costa.push(anel);
+for (const t of trechos) {
+  const p = simplificar(t.map(([lon, lat]) => proj(lat, lon)), TOL_COSTA);
+  if (p.length >= 2 && Math.hypot(...([0, 1].map((d) => Math.max(...p.map((q) => q[d])) - Math.min(...p.map((q) => q[d]))) as [number, number])) > 0.6) costa.push(p);
 }
 
 /* ---- rios (Natural Earth 10m, domínio público), recortados no retângulo do Brasil ---- */

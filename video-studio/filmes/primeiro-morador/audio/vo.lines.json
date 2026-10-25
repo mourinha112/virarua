@@ -1,0 +1,30 @@
+[
+ {
+  "text": "Cada cidade do Brasil tá esperando o primeiro morador.",
+  "clip": "vo/line01.mp3",
+  "clip_at": 0.15,
+  "start": 0.25,
+  "end": 3.15
+ },
+ {
+  "text": "São Miguel dos Milagres já tem o dela.",
+  "clip": "vo/line02.mp3",
+  "clip_at": 3.45,
+  "start": 3.55,
+  "end": 5.75
+ },
+ {
+  "text": "E a sua, ainda tá vazia?",
+  "clip": "vo/line03.mp3",
+  "clip_at": 6.15,
+  "start": 6.25,
+  "end": 7.825
+ },
+ {
+  "text": "Comenta o nome dela e seja o primeiro de lá!",
+  "clip": "vo/line04.mp3",
+  "clip_at": 8.45,
+  "start": 8.55,
+  "end": 11.125
+ }
+]

@@ -5,7 +5,7 @@ import * as T from 'three';
 import { construirCidade, tipoCasa, CEL, type LayoutCidade } from './cidade';
 import { geoCasa, geoExtra, geoArvoreCidade, geoPraca, geoPrefeitura, caixa, cilindro, juntar, disco } from './geometrias';
 import { fita } from './fitas';
-import { ehTerra, TERRENO } from './terreno';
+import { COSTA, ehTerra, TERRENO } from './terreno';
 import { A, NOITE } from './cores';
 import { criarLoja3D as criarLojaPadrao } from './lojas3d';
 import { criarAcademia, criarMercado, criarTech, criarEscritorio } from './lojas-tipos';
@@ -238,10 +238,11 @@ export function criarCidades3D(scene: T.Scene, dados: Dados, camera: Camera, opt
       L.praca.push({ m: mat(Lc.praca.x, Lc.praca.y, 0, Lc.praca.r, 1.4, Lc.praca.r) });
       // praia: trechos da costa a até (raio + 8 km) do centro viram faixa de areia com coqueiros e guarda-sóis
       { const R = Lc.raio + 8;
-        for (const anel of TERRENO.costa) {
+        for (const { pts: anel, fechada } of COSTA) {
           let trecho: [number, number][] = [];
           const fecha = () => { if (trecho.length >= 2) praias.push({ pts: trecho, hw: 0.55 }); trecho = []; };
-          for (let i = 0; i < anel.length; i++) {
+          const nA = fechada ? anel.length : anel.length - 1;
+          for (let i = 0; i < nA; i++) {
             const [x0, y0] = anel[i], [x1, y1] = anel[(i + 1) % anel.length];
             if (Math.hypot(x0 - Lc.cx, y0 - Lc.cy) > R && Math.hypot(x1 - Lc.cx, y1 - Lc.cy) > R) { fecha(); continue; }
             trecho.push([x0, y0]);
@@ -256,7 +257,7 @@ export function criarCidades3D(scene: T.Scene, dados: Dados, camera: Camera, opt
               if (h > 0.35) L.palma.push({ m: mat(px + lx * 0.75, py + ly * 0.75, h * 9, 0.9 + h * 0.4) });
             }
           }
-          trecho.push(anel[0]); fecha();
+          trecho.push(fechada ? anel[0] : anel[anel.length - 1]); fecha();
         }
       }
       if (Lc.igreja) L.igreja.push({ m: mat(Lc.igreja.x, Lc.igreja.y, Lc.igreja.yaw, 1.1) });

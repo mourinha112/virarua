@@ -207,8 +207,13 @@ export function divisasGeo(hw: number) {
   for (const u of TERRENO.ufs) for (const p of u.polys) linhas.push({ pts: [...p.o, p.o[0]], hw });
   return fitaGeo(linhas, 0.35);
 }
+/** trechos da costa; anel fechado vem com o 1º ponto repetido no fim → fechada: true e sem a repetição */
+export const COSTA: { pts: Pt[]; fechada: boolean }[] = TERRENO.costa.map((a) => {
+  const f = a.length > 2 && a[0][0] === a[a.length - 1][0] && a[0][1] === a[a.length - 1][1];
+  return { pts: f ? a.slice(0, -1) : a, fechada: f };
+});
 export function costaGeo(hw: number) {
-  return fitaGeo(TERRENO.costa.map((a) => ({ pts: [...a, a[0]], hw })), 0.3);
+  return fitaGeo(COSTA.map((c) => ({ pts: c.fechada ? [...c.pts, c.pts[0]] : c.pts, hw })), 0.3);
 }
 export function riosGeo(extra = 0) {
   // rios maiores mais largos (scalerank menor = mais importante); extra = margem de areia

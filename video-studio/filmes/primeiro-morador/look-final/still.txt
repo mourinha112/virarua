@@ -1,0 +1,2 @@
+# stretches >= 0.60s with no picture change (start end duration)
+none

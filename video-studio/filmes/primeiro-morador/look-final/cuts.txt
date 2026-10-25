@@ -1,0 +1,11 @@
+# cuts from events final.mp4.events.json (time s, frame, timecode, source)
+0.200	frame 6	0:00.20	event show '#cap0'
+1.500	frame 45	0:01.50	event show '#cap1'
+2.133	frame 64	0:02.13	event show '#cap2'
+3.500	frame 105	0:03.50	event show '#cap3'
+4.867	frame 146	0:04.87	event show '#cap4'
+6.200	frame 186	0:06.20	event show '#cap5'
+6.800	frame 204	0:06.80	event show '#cap6'
+8.500	frame 255	0:08.50	event show '#cap7'
+9.733	frame 292	0:09.73	event show '#cap8'
+10.667	frame 320	0:10.67	event show '#cap9'
