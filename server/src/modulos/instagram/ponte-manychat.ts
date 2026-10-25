@@ -12,7 +12,7 @@ import { config } from '../../config';
 import { q, q1, tx } from '../../db/db';
 import { obterToken } from './provedor';
 import { iguais, sha256, tokenForte } from '../../seguranca/cripto';
-import { resolverCidade } from '../cidades/resolver';
+import { resolverCidade, type Resolucao } from '../cidades/resolver';
 import { provisionar } from '../mundo/provisionar';
 
 const chave = () => process.env.PONTE_MANYCHAT_CHAVE || '';
@@ -59,18 +59,27 @@ export function registrarPonteManychat(app: App) {
     // ?origem=comentario: o ManyChat não manda o texto do comentário, então lemos o último comentário desse @
     // nos posts de campanha direto da Graph API (posts da própria conta: liberado sem a análise da Meta)
     const origem = c.req.query('origem') || '';
-    let texto = '';
-    if (origem === 'comentario') {
+    // candidatos, em ordem: o que veio no corpo, o que a pessoa digitou na DM, o campo cidade e (por último) o comentário.
+    // Usa o PRIMEIRO que for uma cidade de verdade; só pede de novo se nenhum servir.
+    const candidatos = [b.texto, b.comentario, b.text, b.last_input_text, cf.cidade, cf.Cidade]
+      .map((x) => String(x ?? '').trim()).filter(Boolean);
+    const st: { res: Resolucao } = { res: { tipo: 'nao_encontrada' } };
+    const tentar = async (t: string) => {
+      const r = await resolverCidade(t.slice(0, 300));
+      if (r.tipo === 'ok' || (r.tipo === 'ambigua' && st.res.tipo === 'nao_encontrada')) st.res = r;
+      return r.tipo === 'ok';
+    };
+    let achou = false;
+    for (const t of candidatos) if (!achou) achou = await tentar(t);
+    if (!achou && origem === 'comentario') {
       // o comentário pode levar alguns segundos para aparecer na Graph API: tenta de novo até 3x
-      for (let i = 0; i < 4 && !texto; i++) {
+      for (let i = 0; i < 4 && !achou; i++) {
         if (i) await new Promise((r) => setTimeout(r, 2500));
-        texto = (await ultimoComentarioDe(handle)) || '';
+        const cm = await ultimoComentarioDe(handle);
+        if (cm) achou = await tentar(cm);
       }
     }
-    if (!texto) texto = String(b.texto || b.comentario || b.text || cf.cidade || cf.Cidade || b.last_input_text || '');
-    texto = texto.slice(0, 300);
-
-    const res = await resolverCidade(texto);
+    const res = st.res;
     if (res.tipo !== 'ok') {
       const mensagem = res.tipo === 'ambigua'
         ? `Tem mais de uma cidade com esse nome 😅 (${res.candidatos.slice(0, 4).map((x) => `${x.nome} - ${x.uf}`).join(', ')}). Me manda com o estado, assim: ${res.candidatos[0].nome} - ${res.candidatos[0].uf}`
