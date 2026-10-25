@@ -11,11 +11,12 @@ import { provedorInstagram } from './provedor';
 export type TipoResposta = 'casa_nova' | 'ja_tinha' | 'cidade_nao_achada';
 
 const url = () => config.urlPublica.replace(/\/+$/, '');
+const site = () => url().replace(/^https?:\/\//, '');
 const arroba = (h: string | null) => (h ? '@' + h + ' ' : '');
 
 export function textoPublico(tipo: TipoResposta, handle: string | null, cidade: string | null) {
-  if (tipo === 'casa_nova') return `${arroba(handle)}🏠 pronto! Sua casa em ${cidade} foi criada no mapa do Brasil. Te mandei o link no direct pra confirmar que é você.`;
-  if (tipo === 'ja_tinha') return `${arroba(handle)}🏠 você já tem casa em ${cidade}! Te mandei no direct o link pra ver no mapa.`;
+  if (tipo === 'casa_nova') return `${arroba(handle)}🏠 pronto! Sua casa em ${cidade} foi criada no mapa do Brasil. Te mandei o link no direct pra confirmar que é você. Não chegou? Entra em ${site()}/reivindicar.html`;
+  if (tipo === 'ja_tinha') return `${arroba(handle)}🏠 você já tem casa em ${cidade}! Veja no mapa: ${site()}`;
   return `${arroba(handle)}não achei essa cidade 😅 Comenta de novo assim: Duque de Caxias - RJ`;
 }
 export function textoAvisoDono(handle: string | null, cidade: string) {
