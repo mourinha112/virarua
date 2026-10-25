@@ -19,7 +19,7 @@ export function registrar(app: App) {
   app.get('/api/reivindicacao/link', limite(60), async (c) => {
     privado(c);
     const d = await lerLink(c.req.query('t') || '');
-    if (!d) return c.json({ ok: false, erro: 'link inválido, expirado ou já usado. Peça outro comentando de novo na campanha ou use o código de verificação.' }, 410);
+    if (!d) return c.json({ ok: false, erro: 'link inválido, expirado ou já usado. Use o código de verificação abaixo.' }, 410);
     return c.json({ ok: true, ...d, validadeMin: config.reivindicacao.validadeLinkMin });
   });
 
@@ -46,7 +46,7 @@ export function registrar(app: App) {
     if (!pend || !/^[\w-]{40,60}$/.test(pend)) pend = novoPendente();
     setCookie(c, COOKIE_PEND, pend, { httpOnly: true, secure: seguro(c), sameSite: 'Lax', path: '/api/reivindicacao', maxAge: config.reivindicacao.validadeDesafioMin * 60 + 300 });
     const d = await criarDesafio(sha256(pend), handle);
-    return c.json({ ok: true, codigo: d.codigo, validadeMin: d.validadeMin, instrucao: 'Comente este código a partir da SUA conta num post de campanha do perfil oficial. Ele só vale neste navegador.' });
+    return c.json({ ok: true, codigo: d.codigo, validadeMin: d.validadeMin, instrucao: 'Comente este código a partir da SUA conta em qualquer post do @viraruajogo. Ele só vale neste navegador.' });
   });
 
   app.post('/api/reivindicacao/desafio/status', limite(60), async (c) => {

@@ -167,7 +167,7 @@ export function cartaoEstado(ctx: Ctx, uf: string) {
 export function avisoNaoAchei(txt: string) {
   const cart = el('div', 'cart nao');
   cart.append(el('h2', 'ct-h1', `não achei "${txt}"`));
-  cart.append(el('p', 'msg', 'comenta o nome da sua cidade e a UF num post de campanha do jogo e a sua casa aparece aqui.'));
+  cart.append(el('p', 'msg', 'comenta o nome da sua cidade e a UF em qualquer post do @viraruajogo e a sua casa aparece aqui.'));
   cart.append(el('p', 'nota', 'confere se o @ está igualzinho ao do Instagram, ou digita o nome de uma cidade ou estado.'));
   return cart;
 }

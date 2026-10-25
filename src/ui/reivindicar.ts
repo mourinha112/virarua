@@ -85,7 +85,7 @@ async function fluxoLink(t: string) {
 // ---------- fluxo 2: desafio por código ----------
 async function fluxoDesafio() {
   await api('GET', '/sessao');                       // garante o cookie de CSRF
-  const box = cartao('confirmar com código', el('p', '', 'Digitar um @ não libera a casa. A prova é um código publicado pela SUA conta do Instagram num post de campanha do perfil oficial.'));
+  const box = cartao('confirmar com código', el('p', '', 'Não recebeu o link no direct? Sem problema: gere um código aqui e comente ele em qualquer post do @viraruajogo, pela SUA conta. Assim a gente sabe que é você.'));
   const campo = el('div', 'form-campo');
   const lab = el('label', '', 'seu @ (opcional, só para lembrar)'); lab.htmlFor = 'handle';
   const inp = el('input'); inp.id = 'handle'; inp.maxLength = 31; inp.autocapitalize = 'none'; inp.spellcheck = false;
@@ -104,8 +104,9 @@ async function fluxoDesafio() {
 
 function mostrarCodigo(codigo: string, validadeMin: number) {
   const box = cartao('publique este código');
-  box.append(el('p', '', 'Comente exatamente este código, a partir da SUA conta, num post de campanha do perfil oficial:'));
+  box.append(el('p', '', 'Copie o código e comente ele em qualquer post do @viraruajogo, pela SUA conta do Instagram. Esta página confere sozinha:'));
   box.append(el('div', 'codigo', codigo));
+  box.append(Object.assign(el('a', 'btn prim bloco', 'abrir o @viraruajogo'), { href: 'https://www.instagram.com/viraruajogo/', target: '_blank', rel: 'noopener noreferrer' }));
   box.append(el('p', 'nota', `Vale ${Math.round(validadeMin)} min e só conclui NESTE navegador. Se outra pessoa copiar o código, não ganha acesso à sua casa.`));
   const m = msg(); const acoes = el('div', 'acoes');
   const conferir = botao('btn prim bloco', 'já comentei, conferir', async () => {
@@ -119,6 +120,14 @@ function mostrarCodigo(codigo: string, validadeMin: number) {
   });
   acoes.append(conferir, botao('btn bloco', 'gerar outro código', () => fluxoDesafio()), m);
   box.append(acoes); trocar(box);
+  m.className = 'msg'; m.textContent = 'esperando o seu comentário…';
+  const auto = setInterval(async () => {
+    if (!box.isConnected) return clearInterval(auto);
+    const r = await api('POST', '/reivindicacao/desafio/status', {});
+    if (!box.isConnected) return clearInterval(auto);
+    if (r.j.ok && r.j.estado === 'verificado') { clearInterval(auto); confirmarDesafio(r.j); }
+    else if (r.j.ok && r.j.estado !== 'aguardando') { clearInterval(auto); erro(m, 'o código expirou. Gere outro.'); }
+  }, 5000);
 }
 
 function confirmarDesafio(j: J) {
@@ -127,7 +136,7 @@ function confirmarDesafio(j: J) {
   if (j.usuario_instagram) dados.append(linha('Instagram', '@' + j.usuario_instagram));
   if (j.cidade) dados.append(linha('cidade', `${j.cidade} - ${j.uf}`));
   if (j.rua) dados.append(linha('rua', j.rua));
-  if (!j.cidade) dados.append(el('p', 'nota', 'Esta conta ainda não tem casa: comente sua cidade e UF num post de campanha.'));
+  if (!j.cidade) dados.append(el('p', 'nota', 'Esta conta ainda não tem casa: comente sua cidade e UF em qualquer post do @viraruajogo.'));
   box.append(el('p', '', 'O código foi publicado por esta conta:'), dados);
   const ler = camposConfirmacao(box);
   const m = msg(); const acoes = el('div', 'acoes');

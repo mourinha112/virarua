@@ -112,7 +112,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     const msg = el('p', 'msg');
     const ok = botao('btn prim bloco', 'Continuar', () => {
       const h = normHandle(inp.value), gi = dados.POR_HANDLE.get(h);
-      if (gi === undefined) { msg.className = 'msg erro'; msg.textContent = 'não achei esse @ no mapa. Comente sua cidade e UF num post de campanha para ganhar a casa.'; return; }
+      if (gi === undefined) { msg.className = 'msg erro'; msg.textContent = 'não achei esse @ no mapa. Comente sua cidade e UF em qualquer post do @viraruajogo para ganhar a casa.'; return; }
       ctx.lembrarEu(gi); depois();
     });
     inp.onkeydown = (e) => { if (e.key === 'Enter') ok.click(); };
@@ -251,7 +251,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     const o = el('div', 'cartao-b cs-obj'); o.append(el('small', '', 'O OBJETIVO'), el('h2', '', 'construir o Brasil virtual e cuidar da sua cidade'), el('p', '', 'comenta sua cidade → ganha sua casa → ganha pontos e ajuda sua rua e sua cidade → a cada semana tem eleição virtual e competição de ruas · domingo 21h fecha e começa de novo'));
     c.append(o);
     const card = (tit: string, ic: string, itens: string[], escuro = false) => { const s = el('div', 'cartao-b cs-c' + (escuro ? ' escuro' : '')); const h = el('h3'); const i = el('span', 'cs-ic'); i.innerHTML = ICONES[ic]; h.append(i, tit); const ul = el('ul'); for (const t of itens) ul.append(el('li', '', t)); s.append(h, ul); c.append(s); };
-    card('sua casa', 'casa', ['comenta sua cidade e UF num post de campanha', `a casa nasce em até 20 min com ${PONTOS.casa} pontos`, 'cresce com os seus pontos e nunca encolhe', 'para editar e ter avatar, reivindique pelo Instagram (link privado)']);
+    card('sua casa', 'casa', ['comenta sua cidade e UF em qualquer post do @viraruajogo', `a casa nasce na hora com ${PONTOS.casa} pontos`, 'cresce com os seus pontos e nunca encolhe', 'para editar e ter avatar, reivindique pelo Instagram (link privado)']);
     card('sua rua', 'rua', ['toda casa fica numa rua virtual da sua cidade', 'ruas disputam um troféu semanal com missões', 'competição de ruas não escolhe prefeito']);
     card('eleição virtual', 'urna', ['cargos do jogo: líder da rua, prefeito e presidente', 'um voto por eleitor em cada eleição, pode trocar até fechar', 'pontos, compartilhamentos e pagamentos não mudam o peso do voto', 'eleição sem quorum deixa o cargo vago, sem inventar vencedor'], true);
     const duv = el('div', 'cartao-b'); duv.append(el('h2', '', 'dúvidas'));
@@ -317,7 +317,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
   function reivindicar(c: HTMLElement, o: { gi?: number }) {
     const box = el('div', 'cartao-b');
     box.append(el('h2', '', 'reivindicar a casa'), el('p', '', 'digitar um @ nunca libera a casa. A prova é feita pelo Instagram oficial do jogo:'));
-    const ol = el('ol'); for (const t of ['quando você comenta a cidade num post de campanha, o jogo responde no privado com um link de uso único;', 'abra o link e confirme: a casa fica sua e libera avatar, frase e decoração;', 'se o link não chegar, gere um código aqui e mande do seu perfil num post de campanha ou no direct do jogo.']) ol.append(el('li', '', t));
+    const ol = el('ol'); for (const t of ['quando você comenta a cidade em qualquer post do @viraruajogo, o jogo responde no privado com um link de uso único;', 'abra o link e confirme: a casa fica sua e libera avatar, frase e decoração;', 'se o link não chegar, gere um código aqui e mande do seu perfil em qualquer post do @viraruajogo ou no direct do jogo.']) ol.append(el('li', '', t));
     box.append(ol);
     const msg = el('p', 'msg');
     box.append(botao('btn prim', 'gerar código de verificação', async () => {
