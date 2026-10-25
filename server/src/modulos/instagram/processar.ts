@@ -70,7 +70,8 @@ export async function processarComentario(m: MudancaComentario): Promise<Resulta
 
     if (m.conta_id !== config.instagram.contaId) return fim('ignored', 'conta não conectada');
     const midia = await q1<{ status: string; aceita_comentario_cidade: boolean }>(`select status, aceita_comentario_cidade from enabled_media where media_id = $1 and conta_id = $2`, [mediaId, m.conta_id], c);
-    if (!midia || midia.status !== 'ativa') return fim('ignored', 'mídia não habilitada como campanha');
+    // IG_SO_CAMPANHA=1: só os posts habilitados no painel; padrão: qualquer post da conta vale (post pausado no painel continua bloqueado)
+    if (midia ? midia.status !== 'ativa' : process.env.IG_SO_CAMPANHA === '1') return fim('ignored', 'mídia não habilitada como campanha');
     if (!fromId || !/^\d{1,40}$/.test(fromId)) return fim('needs_review', 'comentário sem id estável do autor (from.id); nada é resolvido por username');
     if (fromId === m.conta_id) return fim('ignored', 'comentário da própria conta oficial');
     const ident = { escopo: m.conta_id, externalId: fromId, username, eventoEm };
@@ -88,7 +89,7 @@ export async function processarComentario(m: MudancaComentario): Promise<Resulta
       }
     }
     const textoCidade = codigos.length ? texto.toUpperCase().replace(RE_CODIGO, ' ') : texto;
-    if (!midia.aceita_comentario_cidade) return fim(desafio ? 'challenge' : 'ignored', desafio ? 'código de verificação reconhecido' : 'mídia não aceita comentário de cidade');
+    if (midia && !midia.aceita_comentario_cidade) return fim(desafio ? 'challenge' : 'ignored', desafio ? 'código de verificação reconhecido' : 'mídia não aceita comentário de cidade');
 
     const res = await resolverCidade(textoCidade, c);
     if (res.tipo === 'ok') {
