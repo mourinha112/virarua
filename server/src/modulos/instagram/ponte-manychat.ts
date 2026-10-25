@@ -59,7 +59,14 @@ export function registrarPonteManychat(app: App) {
     // ?origem=comentario: o ManyChat não manda o texto do comentário, então lemos o último comentário desse @
     // nos posts de campanha direto da Graph API (posts da própria conta: liberado sem a análise da Meta)
     const origem = c.req.query('origem') || '';
-    let texto = origem === 'comentario' ? (await ultimoComentarioDe(handle)) || '' : '';
+    let texto = '';
+    if (origem === 'comentario') {
+      // o comentário pode levar alguns segundos para aparecer na Graph API: tenta de novo até 3x
+      for (let i = 0; i < 4 && !texto; i++) {
+        if (i) await new Promise((r) => setTimeout(r, 2500));
+        texto = (await ultimoComentarioDe(handle)) || '';
+      }
+    }
     if (!texto) texto = String(b.texto || b.comentario || b.text || cf.cidade || cf.Cidade || b.last_input_text || '');
     texto = texto.slice(0, 300);
 
