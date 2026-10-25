@@ -23,8 +23,10 @@ export function registrarPonteManychat(app: App) {
     if (!k) throw new ErroHttp(404, 'não encontrado');
     if (!iguais(sha256(String(c.req.header('x-ponte-chave') || '')), sha256(k))) throw new ErroHttp(401, 'chave inválida');
     const b = await c.req.json().catch(() => ({} as any));
+    // aceita o corpo simples {username, texto} ou o "Full Contact Data" do ManyChat (ig_username + custom_fields.cidade)
+    const cf = b.custom_fields && typeof b.custom_fields === 'object' ? b.custom_fields : {};
     const handle = String(b.username || b.ig_username || '').replace(/^@/, '').trim().toLowerCase();
-    const texto = String(b.texto || b.comentario || b.text || '').slice(0, 300);
+    const texto = String(b.texto || b.comentario || b.text || cf.cidade || cf.Cidade || b.last_input_text || '').slice(0, 300);
     if (!/^[a-z0-9._]{1,30}$/.test(handle)) throw new ErroHttp(400, 'username inválido');
 
     const res = await resolverCidade(texto);
