@@ -39,7 +39,7 @@ async function sessao(c: Context<{ Variables: Vars }>, next: Next) {
 
 async function csrf(c: Context, next: Next) {
   const m = c.req.method;
-  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS' || c.req.path.startsWith('/api/webhooks/')) return next();
+  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS' || c.req.path.startsWith('/api/webhooks/') || c.req.path === '/api/ponte/manychat') return next(); // servidor-a-servidor: protegidos por assinatura ou chave, sem cookie
   const k = getCookie(c, COOKIE_CSRF), h = c.req.header('x-csrf');
   if (!k || !h || !iguais(Buffer.from(k), Buffer.from(h))) return c.json({ ok: false, erro: 'sessão expirada: recarregue a página' }, 403);
   return next();
