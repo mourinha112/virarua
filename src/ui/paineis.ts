@@ -122,7 +122,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     // conta real (sessão no servidor): casa, rua, avatar e eleição da rua
     const eu = await api.eu();
     if (eu.ok && eu.casa) { await montarHub(c, ctx, abrir, fechar, eu); return; }
-    if (location.hostname === 'localhost' || /^(127.|192.168.|10.)/.test(location.hostname)) {
+    if ((import.meta as any).env?.DEV) {
       const t = el('div', 'cartao-b papel');
       t.append(el('h2', '', 'testar logado (desenvolvimento)'), el('p', 'nota', 'cria uma conta de teste com casa reivindicada, avatar e 5 vizinhos na mesma rua, para você experimentar avatar, rua e eleição de rua sem o Instagram.'));
       const sel = el('select', 'frase-inp');
