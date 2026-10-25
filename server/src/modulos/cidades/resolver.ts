@@ -26,13 +26,20 @@ export async function resolverCidade(texto: string, ex?: Exec): Promise<Resoluca
   const limpo = limparTexto(texto); if (!limpo) return { tipo: 'nao_encontrada' };
   const tk = limpo.split(' ').filter(Boolean).slice(0, 24);
   // UF: sigla de 2 letras isolada ou nome do estado; a última ocorrência vale
-  let uf: string | null = null, fimCidade = tk.length;
+  let uf: string | null = null, fimCidade = tk.length, ufPorNome = false;
   for (let i = tk.length - 1; i >= 0 && !uf; i--) {
     const s = tk[i].toUpperCase(); if (s.length === 2 && UFS[s]) { uf = s; fimCidade = i; break; }
-    for (let n = 4; n >= 2 && !uf; n--) { if (i - n + 1 < 0) continue; const nome = tk.slice(i - n + 1, i + 1).join(' '); const sig = UF_POR_NOME.get(nome); if (sig) { uf = sig; fimCidade = i - n + 1; } }
+    for (let n = 4; n >= 2 && !uf; n--) { if (i - n + 1 < 0) continue; const nome = tk.slice(i - n + 1, i + 1).join(' '); const sig = UF_POR_NOME.get(nome); if (sig) { uf = sig; fimCidade = i - n + 1; ufPorNome = true; } }
   }
-  // n-gramas candidatos (mais longos primeiro); com UF, só antes da UF
-  const fonte = uf ? tk.slice(0, fimCidade) : tk;
+  const r = await buscar(uf ? tk.slice(0, fimCidade) : tk, uf, ex);
+  // "São Paulo", "Rio de Janeiro": o nome do estado também é o nome da cidade. Sem cidade antes do estado,
+  // tenta o texto inteiro como cidade DENTRO desse estado.
+  if (r.tipo === 'nao_encontrada' && uf && ufPorNome) return buscar(tk, uf, ex);
+  return r;
+}
+
+async function buscar(fonte: string[], uf: string | null, ex?: Exec): Promise<Resolucao> {
+  // n-gramas candidatos (mais longos primeiro)
   const grams: string[] = [];
   for (let n = Math.min(6, fonte.length); n >= 1; n--) for (let i = 0; i + n <= fonte.length; i++) grams.push(fonte.slice(i, i + n).join(' '));
   if (!grams.length) return { tipo: 'nao_encontrada' };
