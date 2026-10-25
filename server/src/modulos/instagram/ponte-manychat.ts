@@ -31,9 +31,10 @@ export function registrarPonteManychat(app: App) {
 
     const res = await resolverCidade(texto);
     if (res.tipo !== 'ok') {
-      const exemplo = res.tipo === 'ambigua' ? `${res.candidatos[0].nome} - ${res.candidatos[0].uf}` : 'Duque de Caxias - RJ';
-      return c.json({ ok: true, resultado: 'cidade_nao_achada', cidade: '', link: '',
-        mensagem: `Não achei essa cidade 😅 Comenta de novo com cidade e estado, assim: ${exemplo}` });
+      const mensagem = res.tipo === 'ambigua'
+        ? `Tem mais de uma cidade com esse nome 😅 (${res.candidatos.slice(0, 4).map((x) => `${x.nome} - ${x.uf}`).join(', ')}). Me manda com o estado, assim: ${res.candidatos[0].nome} - ${res.candidatos[0].uf}`
+        : 'Não achei essa cidade 😅 Me manda de novo com o estado, assim: Duque de Caxias - RJ';
+      return c.json({ ok: true, resultado: 'cidade_nao_achada', cidade: '', link: '', mensagem });
     }
 
     const r = await tx(async (t) => {
