@@ -5,10 +5,10 @@ Tudo no mesmo servidor: o **nginx** entrega o site (pasta `dist`) e repassa `/ap
 Requisitos: Ubuntu 22.04 ou 24.04, 2 GB de RAM (1 GB funciona com swap), um domínio apontando para o IP do servidor (registro **A** no seu DNS).
 
 ## 1. Subir o código para o GitHub (no seu PC)
-1. Em github.com crie um repositório **privado** vazio chamado `seumundonovo` (sem README).
+1. Em github.com repositório: https://github.com/mourinha112/virarua (deixe **privado**).
 2. Na pasta do projeto:
    ```
-   git remote add origin https://github.com/SEU_USUARIO/seumundonovo.git
+   git remote add origin https://github.com/mourinha112/virarua.git
    git push -u origin main
    ```
 3. No dia a dia: `git add -A` → `git commit -m "o que mudou"` → `git push`.
@@ -42,7 +42,7 @@ Repositório privado: crie uma *deploy key* (chave só de leitura) no servidor e
 sudo -u smn mkdir -p /srv/seumundonovo/.ssh
 sudo -u smn ssh-keygen -t ed25519 -N "" -f /srv/seumundonovo/.ssh/id_ed25519
 sudo cat /srv/seumundonovo/.ssh/id_ed25519.pub     # cole no GitHub → Deploy keys
-sudo -u smn git clone git@github.com:SEU_USUARIO/seumundonovo.git /srv/seumundonovo/app
+sudo -u smn git clone git@github.com:mourinha112/virarua.git /srv/seumundonovo/app
 sudo cp /srv/seumundonovo/app/.env.example /srv/seumundonovo/.env
 sudo chown smn:smn /srv/seumundonovo/.env && sudo chmod 600 /srv/seumundonovo/.env
 sudo nano /srv/seumundonovo/.env
