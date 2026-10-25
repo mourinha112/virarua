@@ -2,7 +2,7 @@
    com instancing global (um InstancedMesh por peça). Inclui quadras, ruas com calçada e faixa, postes,
    árvores (verdes, floridas, palmeiras), praças, igrejas e as lojas patrocinadas. */
 import * as T from 'three';
-import { construirCidade, tipoCasa, CEL, type LayoutCidade } from './cidade';
+import { construirCidade, tipoCasa, CEL, QUADRA_CHEIA, type LayoutCidade } from './cidade';
 import { geoCasa, geoExtra, geoArvoreCidade, geoPraca, geoPrefeitura, caixa, cilindro, juntar, disco } from './geometrias';
 import { fita } from './fitas';
 import { COSTA, ehTerra, TERRENO } from './terreno';
@@ -219,7 +219,7 @@ export function criarCidades3D(scene: T.Scene, dados: Dados, camera: Camera, opt
       const Lc = layoutDe(c); layouts.set(c.ibge, Lc);
       const ca = Math.cos(Lc.ang), sa = Math.sin(Lc.ang);
       const W = (i: number, j: number): [number, number] => [Lc.cx + (i * ca - j * sa) * CEL, Lc.cy + (i * sa + j * ca) * CEL];
-      const quadras = new Set<string>();
+      const quadras = new Map<string, { x: number; y: number }[]>();
       Lc.lotes.forEach((lo, k) => {
         const gi = c.ini + k, cg = dados.cargo(gi), faixa = tipoCasa(dados.NV[gi], cg);
         const opcoes = MODELOS_DA_FAIXA[faixa], mod = opcoes[lo.v % opcoes.length];
@@ -228,14 +228,18 @@ export function criarCidades3D(scene: T.Scene, dados: Dados, camera: Camera, opt
         const s = 0.72 + 0.08 * h;
         const m = mat(lo.x, lo.y, lo.yaw, s, s * 0.95, s);
         L['p' + mod].push({ m, c: cw }); L['t' + mod].push({ m, c: cr });
-        quadras.add(Math.floor(lo.i / 4) + ',' + Math.floor(lo.j / 4));
+        { const kq = Math.floor(lo.i / 4) + ',' + Math.floor(lo.j / 4); quadras.set(kq, [...(quadras.get(kq) || []), lo]); }
         casas.push({ gi, x: lo.x, y: lo.y, alt: [0.6, 1.0, 1.15, 1.6, 2.5, 0.9][faixa], ibge: c.ibge });
       });
       // quadra = bloco 3×3 lotes; rotação no Three é +ang para alinhar com a grade (x→x, y→−z)
-      for (const q of quadras) { const [bi, bj] = q.split(',').map(Number); const [x, y] = W(bi * 4 + 2, bj * 4 + 2); if (![[0.6, 0.6], [3.4, 0.6], [0.6, 3.4], [3.4, 3.4]].every(([a, b]) => { const p = W(bi * 4 + a, bj * 4 + b); return ehTerra(p[0], p[1]); })) continue; L.quadra.push({ m: mat(x, y, Lc.ang, 3 * CEL - 0.12, 1, 3 * CEL - 0.12), c: QUADRA }); }
+      for (const [q, lotesQ] of quadras) {
+        // quadra com poucas casas: só um gramadinho embaixo de cada casa (sem o quarteirão inteiro vazio)
+        if (lotesQ.length < QUADRA_CHEIA) { for (const lo of lotesQ) L.quadra.push({ m: mat(lo.x, lo.y, Lc.ang, CEL - 0.18, 1, CEL - 0.18), c: QUADRA }); continue; }
+        const [bi, bj] = q.split(',').map(Number); const [x, y] = W(bi * 4 + 2, bj * 4 + 2); if (![[0.6, 0.6], [3.4, 0.6], [0.6, 3.4], [3.4, 3.4]].every(([a, b]) => { const p = W(bi * 4 + a, bj * 4 + b); return ehTerra(p[0], p[1]); })) continue; L.quadra.push({ m: mat(x, y, Lc.ang, 3 * CEL - 0.12, 1, 3 * CEL - 0.12), c: QUADRA });
+      }
       for (const v of Lc.verdes) L.arv.push({ m: mat(v.x, v.y, v.x * 7.7, 0.8), c: COPAS[Math.floor((((v.x * 91.3 + v.y * 37.1) % 1) + 1) % 1 * COPAS.length)] });
       for (const a of Lc.arvores) { const fl = !a.palma && (((a.x * 131.7 + a.y * 71.3) % 1) + 1) % 1 < 0.12; L[a.palma ? 'palma' : fl ? 'flor' : 'arv'].push({ m: mat(a.x, a.y, a.x * 13.1, a.s), c: a.palma || fl ? undefined : COPAS[Math.floor((((a.x * 53.7 + a.y * 19.3) % 1) + 1) % 1 * COPAS.length)] }); }
-      L.praca.push({ m: mat(Lc.praca.x, Lc.praca.y, 0, Lc.praca.r, 1.4, Lc.praca.r) });
+      if (Lc.igreja) L.praca.push({ m: mat(Lc.praca.x, Lc.praca.y, 0, Lc.praca.r, 1.4, Lc.praca.r) });
       // praia: trechos da costa a até (raio + 8 km) do centro viram faixa de areia com coqueiros e guarda-sóis
       { const R = Lc.raio + 8;
         for (const { pts: anel, fechada } of COSTA) {

@@ -31,6 +31,8 @@ export type LayoutCidade = {
 };
 
 const cache = new Map<string, LayoutCidade>();
+/** a partir de quantas casas a quadra ganha gramado inteiro e árvore no miolo */
+export const QUADRA_CHEIA = 3;
 
 /** nCasas = quantos lotes ocupar. folga = lotes a mais calculados para árvores e expansão (não muda a ordem). */
 export function construirCidade(ibge: number, cx: number, cy: number, nCasas: number, bloqueio?: (x: number, y: number) => boolean, sigBloq = ''): LayoutCidade {
@@ -121,14 +123,18 @@ export function construirCidade(ibge: number, cx: number, cy: number, nCasas: nu
   const arvores: LayoutCidade['arvores'] = [];
   const tropical = cy > -2200 && cy < 1300 && cx > 900; // litoral NE/N: palmeiras
   const vistos = new Set<string>();
+  // casas por quadra: árvore no miolo só em quadra com vizinhança (casa sozinha não ganha árvore solta no gramado)
+  const porQuadra = new Map<string, number>(); for (const l of usados) { const kq = Math.floor(l.i / 4) + ',' + Math.floor(l.j / 4); porQuadra.set(kq, (porQuadra.get(kq) || 0) + 1); }
   for (const l of usados) {
+    if ((porQuadra.get(Math.floor(l.i / 4) + ',' + Math.floor(l.j / 4)) || 0) < QUADRA_CHEIA) continue;
     const bi = Math.floor(l.i / 4) * 4 + 2, bj = Math.floor(l.j / 4) * 4 + 2, kk = bi + ',' + bj; if (vistos.has(kk)) continue; vistos.add(kk);
     const [x, y] = W(bi, bj); if (!emTerra(x, y)) continue;
     const q = h2(bi, bj, ibge);
     if (q < 0.45) arvores.push({ x, y, s: 0.8 + 0.3 * q, palma: tropical && q < 0.15 });
     if (q > 0.85) { const [x2, y2] = W(bi + 0.45, bj - 0.4); arvores.push({ x: x2, y: y2, s: 0.6 + 0.3 * q, palma: false }); }
   }
-  for (let a = 0; a < 10; a++) {
+  // árvores da calçada da praça: só cidade com prefeitura (na vila o centro é um cruzamento de ruas)
+  if (!pequena) for (let a = 0; a < 10; a++) {
     const t = (a / 10) * Math.PI * 2 + 0.3;
     const [x, y] = W(Math.cos(t) * (RP - 1.15), Math.sin(t) * (RP - 1.15));
     if (Math.abs(Math.cos(t)) > 0.2 && Math.abs(Math.sin(t)) > 0.2) arvores.push({ x, y, s: 0.55, palma: tropical });
