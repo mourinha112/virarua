@@ -1,7 +1,7 @@
 /* módulo identidade: reivindicação (link de uso único e desafio por código), /api/eu e privacidade do titular. */
 import type { Context } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { type App, type Vars, criarSessao, encerrarSessao, exigirLogin, limite, ErroHttp } from '../../http/app';
+import { type App, type Vars, criarSessao, encerrarSessao, exigirLogin, limite, ErroHttp, seguro } from '../../http/app';
 import { config } from '../../config';
 import { q, q1, tx, emitir } from '../../db/db';
 import { sha256 } from '../../seguranca/cripto';
@@ -44,7 +44,7 @@ export function registrar(app: App) {
     const handle = typeof b.handle === 'string' ? b.handle.replace(/^@/, '').trim().slice(0, 30) || null : null;
     let pend = getCookie(c, COOKIE_PEND);
     if (!pend || !/^[\w-]{40,60}$/.test(pend)) pend = novoPendente();
-    setCookie(c, COOKIE_PEND, pend, { httpOnly: true, secure: config.ambiente === 'producao', sameSite: 'Lax', path: '/api/reivindicacao', maxAge: config.reivindicacao.validadeDesafioMin * 60 + 300 });
+    setCookie(c, COOKIE_PEND, pend, { httpOnly: true, secure: seguro(c), sameSite: 'Lax', path: '/api/reivindicacao', maxAge: config.reivindicacao.validadeDesafioMin * 60 + 300 });
     const d = await criarDesafio(sha256(pend), handle);
     return c.json({ ok: true, codigo: d.codigo, validadeMin: d.validadeMin, instrucao: 'Comente este código a partir da SUA conta num post de campanha do perfil oficial. Ele só vale neste navegador.' });
   });

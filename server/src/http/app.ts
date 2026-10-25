@@ -12,12 +12,13 @@ export type Vars = { usuario: Usuario | null; sessaoId: string | null };
 export type App = Hono<{ Variables: Vars }>;
 
 const COOKIE_SESSAO = 'smn_sess', COOKIE_CSRF = 'smn_csrf';
-const seguro = () => config.ambiente === 'producao';
+/** cookie Secure só quando a requisição chegou por HTTPS (nginx manda X-Forwarded-Proto); em HTTP puro o navegador descartaria o cookie */
+export const seguro = (c: Context) => (c.req.header('x-forwarded-proto') || new URL(c.req.url).protocol.replace(':', '')) === 'https';
 
 export async function criarSessao(c: Context, userId: string) {
   const token = tokenForte(32);
   const r = await q1<{ id: string }>(`insert into sessions (user_id, token_hash, expira_em, ua) values ($1, $2, now() + interval '30 days', $3) returning id`, [userId, sha256(token), (c.req.header('user-agent') || '').slice(0, 200)]);
-  setCookie(c, COOKIE_SESSAO, token, { httpOnly: true, secure: seguro(), sameSite: 'Lax', path: '/', maxAge: 30 * 86400 });
+  setCookie(c, COOKIE_SESSAO, token, { httpOnly: true, secure: seguro(c), sameSite: 'Lax', path: '/', maxAge: 30 * 86400 });
   return r!.id;
 }
 export async function encerrarSessao(c: Context) {
@@ -32,7 +33,7 @@ async function sessao(c: Context<{ Variables: Vars }>, next: Next) {
     const r = await q1<Usuario & { sid: string }>(`select u.id, u.nome_publico, u.status, u.faixa_etaria, u.verificado_em, s.id sid from sessions s join users u on u.id = s.user_id where s.token_hash = $1 and s.revogada_em is null and s.expira_em > now()`, [sha256(t)]);
     if (r && r.status === 'ativo') { c.set('usuario', r); c.set('sessaoId', r.sid); }
   }
-  if (!getCookie(c, COOKIE_CSRF)) setCookie(c, COOKIE_CSRF, tokenForte(18), { httpOnly: false, secure: seguro(), sameSite: 'Lax', path: '/' });
+  if (!getCookie(c, COOKIE_CSRF)) setCookie(c, COOKIE_CSRF, tokenForte(18), { httpOnly: false, secure: seguro(c), sameSite: 'Lax', path: '/' });
   await next();
 }
 
