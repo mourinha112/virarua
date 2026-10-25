@@ -66,7 +66,8 @@ export function calcularCargos(mor: Morador[]): LetraCargo[] {
   const ufDe = new Map(MUNS.map((m) => [m[0], m[2]]));
   const popUf = new Map<string, number>(); for (const m of MUNS) popUf.set(m[2], (popUf.get(m[2]) || 0) + m[5]);
   // desempate: mais pontos; depois casa mais antiga (índice menor)
-  const ordem = mor.map((_, i) => i).sort((a, b) => mor[b].pts - mor[a].pts || a - b);
+  // só concorre a cargo quem fez pontos na semana (casa recém-criada, sem pontos, não vira presidente/senador)
+  const ordem = mor.map((_, i) => i).filter((i) => mor[i].pts > 0).sort((a, b) => mor[b].pts - mor[a].pts || a - b);
   const livre = (i: number) => cg[i] === ' ';
   // Brasil
   const br = ordem.filter(livre); if (br[0] !== undefined) cg[br[0]] = 'P'; for (const i of br.slice(1, 50)) cg[i] = 'S';

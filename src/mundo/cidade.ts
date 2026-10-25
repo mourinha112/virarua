@@ -165,12 +165,14 @@ export function construirCidade(ibge: number, cx: number, cy: number, nCasas: nu
   return out;
 }
 
-/** Tipo de construção pelo nível (e cargo): 0 térrea, 1 sobrado, 2 casa alta, 3 prédio, 4 torre, 5 palácio. */
+/** Tipo de construção pelo nível (pontos): 0 térrea, 1 sobrado, 2 casa alta, 3 prédio, 4 torre.
+    5 (palácio) é exclusivo do presidente. Os outros cargos não mudam o tamanho (com poucos jogadores todo mundo
+    viraria prefeito/senador e nasceria prédio); eles aparecem no telhado dourado e no cartão. */
 export function tipoCasa(nivel: number, cargo: string | null) {
-  if (cargo === 'P' || cargo === 'G') return 5;
+  if (cargo === 'P') return 5;
   if (nivel >= 20) return 4;
-  if (nivel >= 12 || cargo === 'S' || cargo === 'D') return 3;
-  if (nivel >= 7 || cargo === 'M') return 2;
+  if (nivel >= 12) return 3;
+  if (nivel >= 7) return 2;
   if (nivel >= 3) return 1;
   return 0;
 }
