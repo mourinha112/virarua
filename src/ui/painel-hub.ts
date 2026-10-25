@@ -28,6 +28,7 @@ export async function montarHub(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?
   info.append(el('b', 'hub-nome', '@' + (eu.usuario?.usuario_instagram || eu.usuario?.nome_publico || 'você')), el('span', '', `${cs.cidade.nome} · ${cs.cidade.uf}${rua ? ' · ' + rua.nome : ''}`));
   const xp = rec.ok ? rec.resumo.xp_total + (cs.xp || 0) : cs.xp || 0;
   const nv = cs.nivel || 1, prox = XP_NIVEL(nv);
+  info.append(el('span', 'hub-pts', `⭐ ${xp.toLocaleString('pt-BR')} pontos no total${rec.ok ? ` · +${rec.resumo.xp_hoje} hoje (teto ${rec.resumo.teto_xp_dia})` : ''}`));
   info.append(el('span', 'hub-nv', `casa nível ${nv}`), barra(xp / Math.max(1, prox)), el('small', 'nota', `${xp} de ${prox} XP para a casa subir de nível`));
   topo.append(info); s1.append(topo);
   setTimeout(() => { try { criarPreviaAvatar(cv, { ...PADRAO, ...(eu.avatar?.config || {}) } as any); } catch { cv.remove(); } }, 30);

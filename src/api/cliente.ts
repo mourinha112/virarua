@@ -30,5 +30,6 @@ export const api = {
   desafio: (handle: string) => req<{ codigo: string; validadeMin: number }>('POST', '/reivindicacao/desafio', { handle }),
   devEntrar: (ibge: number, apelido = 'voce_teste') => req<{ aviso: string; cidade: string }>('POST', '/dev/entrar', { ibge, apelido }),
   eu: () => req<{ usuario: any; casa: null | { id: string; nivel: number; lote_index: number; cidade: { ibge: number; nome: string; uf: string } }; rua: null | { id: string; nome: string; ocupadas: number; capacidade: number }; avatar: null | { config: any } }>('GET', '/eu'),
+  recompensas: () => req<{ resumo: { xp_total: number; xp_hoje: number; teto_xp_dia: number } }>('GET', '/recompensas/eu'),
   ruasDaCidade: (ibge: number) => req<{ ruas: RuaUI[] }>('GET', `/cidades/${ibge}/ruas`),
 };

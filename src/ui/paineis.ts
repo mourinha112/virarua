@@ -150,7 +150,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
   }
 
   /* ---------- Eleições (jogo clássico: quem mais pontua na semana manda) ---------- */
-  async function eleicoes(c: HTMLElement, o: { alvo?: number }) {
+  async function eleicoes(c: HTMLElement, o: { alvo?: number; cargo?: string }) {
     const fim = proximoFechamento();
     const topo = el('div', 'cartao-b escuro');
     topo.append(el('h2', '', 'eleição virtual da semana'), el('p', '', 'cargos do jogo, sem vínculo com eleições reais. A apuração fecha domingo às 21h (Brasília).'));
@@ -159,7 +159,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     pinta(); const t = setInterval(() => (rel.isConnected ? pinta() : clearInterval(t)), 30000);
     c.append(topo);
 
-    const oficial = el('div'); c.append(oficial); montarPainelEleicoes(oficial, ctx);
+    const oficial = el('div'); c.append(oficial); montarPainelEleicoes(oficial, ctx, o?.cargo as any, () => abrir('casa'));
 
     // placar do jogo clássico por pontos
     const tabs = el('div', 'seg'); const caixa = el('div');

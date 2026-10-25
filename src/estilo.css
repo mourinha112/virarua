@@ -474,3 +474,23 @@ html.filme body > *:not(#app), html.filme #app > *:not(#gl) { display: none !imp
 .loja-zap { background: #25d366; color: #fff; display: flex; flex-direction: column; align-items: center; text-decoration: none; }
 .loja-zap small { font-weight: 700; opacity: .9; }
 @media (max-width: 640px) { .cart.loja.com-logo .loja-logo { width: 68px; height: 68px; border-radius: 18px; } }
+
+/* ---------- botão de perfil (topo, canto esquerdo) e aviso de eleição ---------- */
+.perfil-bt { position: absolute; left: 14px; top: 2px; height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 4px; border-radius: 999px; border: var(--borda) solid var(--ink); background: var(--branco); box-shadow: var(--sombra-p); font: inherit; cursor: pointer; max-width: 210px; }
+.perfil-bt.on { background: var(--amarelo); }
+.perfil-av { width: 32px; height: 32px; flex: none; border-radius: 50%; border: 2px solid var(--ink); background: var(--papel); display: grid; place-items: center; font-weight: 900; }
+.perfil-tx { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; min-width: 0; }
+.perfil-tx b { font-size: 13px; font-weight: 900; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.perfil-tx small { font-size: 12px; font-weight: 800; }
+.hub-pts { display: block; font-weight: 900; font-size: 15px; margin: 2px 0 4px; }
+.pop-fundo { position: fixed; inset: 0; z-index: 200; background: rgba(30, 36, 48, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.pop { width: min(100%, 380px); text-align: center; animation: pop-in 0.22s ease-out; }
+.pop-ic { font-size: 44px; line-height: 1; margin-bottom: 4px; }
+.pop .hub-bts { justify-content: center; }
+@keyframes pop-in { from { transform: scale(0.9); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 1100px) {
+  .perfil-bt { left: 10px; top: 3px; width: 42px; padding: 0; justify-content: center; }
+  .perfil-tx { display: none; }
+  .perfil-av { width: 34px; height: 34px; }
+  #form { width: min(calc(100% - 104px), 460px); margin: 0 52px; }
+}

@@ -14,9 +14,9 @@ function falta(iso: string) {
   return `${Math.floor(ms / 86400000)}d ${String(Math.floor((ms % 86400000) / 3600000)).padStart(2, '0')}h ${String(Math.floor((ms % 3600000) / 60000)).padStart(2, '0')}min`;
 }
 
-export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx) {
+export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx, abaInicial?: CargoId, entrar?: () => void) {
   corpo.innerHTML = '';
-  let aba: CargoId = 'prefeito';
+  let aba: CargoId = abaInicial || 'prefeito';
   let lista: EleicaoV[] = [], publico = true;
 
   const topo = el('div', 'cartao-b escuro');
@@ -40,6 +40,8 @@ export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx) {
     desenharCalendario(rc.ok ? rc : null, rc.ok ? '' : rc.erro);
     if (!rl.ok) { lista = []; caixa.innerHTML = ''; caixa.append(el('p', 'msg erro', rl.erro || 'servidor de eleições indisponível agora.')); return; }
     lista = rl.eleicoes; publico = rl.publico;
+    // sem aba pedida: abre na primeira com algo pra fazer (votar ou se candidatar)
+    if (!abaInicial) { const alvo = lista.find((e) => (e.status === 'votacao' && !e.meuVoto) || (e.status === 'inscricoes' && !e.minhaCandidatura)); if (alvo) aba = alvo.cargo; }
     if (rc.ok && rc.meuCargo) desenharMeuCargo();
     pintar();
   }
@@ -70,7 +72,7 @@ export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx) {
     tabs.querySelectorAll<HTMLButtonElement>('button').forEach((b) => { const on = b.dataset.k === aba; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
     caixa.innerHTML = '';
     const doCargo = lista.filter((e) => e.cargo === aba);
-    if (publico) caixa.append(el('p', 'nota', 'entre na sua conta para ver as eleições virtuais da sua rua e cidade e votar.'));
+    if (publico) { caixa.append(el('p', 'nota', 'para se candidatar e votar, confirme a sua casa (link do direct ou código de verificação).')); if (entrar) caixa.append(botao('btn prim bloco', 'confirmar minha casa', entrar)); }
     if (!doCargo.length) { caixa.append(el('p', 'msg', aba === 'presidente' ? 'nenhuma eleição virtual nacional aberta agora.' : 'nenhuma eleição virtual deste escopo para você agora.')); return; }
     for (const e of doCargo) caixa.append(desenharEleicao(e));
   }
@@ -135,7 +137,7 @@ export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx) {
     if (!publico && e.status === 'inscricoes' && e.turno === 1) {
       const minha = e.minhaCandidatura?.estado === 'inscrito';
       if (minha) b.append(botao('btn mini', 'retirar minha candidatura', async () => { if (!confirm('retirar sua candidatura desta eleição virtual?')) return; const r = await eleicoesApi.retirar(e.id); toast(r.ok ? r.mensagem : r.erro); if (r.ok) carregar(); }));
-      else b.append(botao('btn mini prim', `quero concorrer a ${e.cargoNome}`, () => pedirCandidatura(e, false)));
+      else b.append(botao('btn prim bloco', `📣 quero me candidatar a ${e.cargoNome}`, () => pedirCandidatura(e, false)));
     }
     function pedirCandidatura(ev: EleicaoV, trocar: boolean) {
       confirma.innerHTML = '';

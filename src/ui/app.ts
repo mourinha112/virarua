@@ -18,6 +18,7 @@ const nivelCidade = (c: { n: number }) => { const k = c.n < 40 ? 0 : c.n < 150 ?
 const CARGOS_NOME: Record<string, string> = Object.fromEntries(Object.entries(CARGOS).map(([k, v]) => [k, v.nome]));
 import { cartaoCasa, cartaoCidade, cartaoEstado, cartaoLoja, avisoNaoAchei } from './cartoes';
 import { montarPaineis, type Paineis } from './paineis';
+import { montarPerfil } from './perfil';
 
 export type Sel = { tipo: 'casa'; gi: number } | { tipo: 'cid'; c: Cidade } | { tipo: 'est'; uf: string } | null;
 
@@ -128,6 +129,7 @@ export async function iniciarApp(mundo: Mundo) {
     },
   };
   ctx.paineis = montarPaineis(ctx);
+  montarPerfil(ctx);
   redesenharMarcadores();
 
   /* ---------- margens da área livre (câmera e rótulos evitam topo, cartão e barra) ---------- */
@@ -290,6 +292,7 @@ export async function iniciarApp(mundo: Mundo) {
 
   // conta real logada: avatar na frente da própria casa + atalho "ver minha casa"
   async function carregarEu() {
+    (window as any).__atualizarPerfil?.();
     const r = await api.eu(); if (!r.ok || !r.casa) { cid3d.definirMeuAvatar(null); return; }
     const casa = r.casa; cid3d.definirMeuAvatar({ ibge: casa.cidade.ibge, lote: casa.lote_index, config: (r.avatar?.config || {}) as any });
     (window as any).__irMinhaCasa = () => { const c = dados.POR_IBGE.get(casa.cidade.ibge); if (c) cid3d.forcar(c); const p = cid3d.posicaoLote(casa.cidade.ibge, casa.lote_index); if (p) mundo.camera.voar({ fx: p.x, fy: p.y, ld: Math.log(7), phi: 38 }); setTimeout(() => cid3d.acenarEu(), 2500); };
