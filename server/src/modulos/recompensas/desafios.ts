@@ -49,11 +49,15 @@ export function gerar(tipo: TipoDesafio, semente: string, params: Record<string,
     const a = 2 + Math.floor(r() * 18), b = 2 + Math.floor(r() * 18), soma = r() < 0.6;
     const res = soma ? a + b : Math.max(a, b) - Math.min(a, b);
     const ops = new Set([res]); while (ops.size < 4) ops.add(Math.max(0, res + Math.floor(r() * 9) - 4));
-    return { enunciado: { pergunta: soma ? `quanto é ${a} + ${b}?` : `quanto é ${Math.max(a, b)} − ${Math.min(a, b)}?`, opcoes: embaralhar([...ops], r) }, gabarito: { resposta: res } };
+    const pergunta = params.tema === 'material'
+      ? (soma ? `chegaram ${a} sacos de cimento e depois mais ${b}. Quantos sacos ao todo?` : `tinha ${Math.max(a, b)} tijolos e a obra usou ${Math.min(a, b)}. Quantos sobraram?`)
+      : soma ? `quanto é ${a} + ${b}?` : `quanto é ${Math.max(a, b)} − ${Math.min(a, b)}?`;
+    return { enunciado: { pergunta, opcoes: embaralhar([...ops], r) }, gabarito: { resposta: res } };
   }
   if (tipo === 'sequencia') {
-    const n = Number(params.tamanho || 3); const seq = Array.from({ length: n }, () => EMOTES[Math.floor(r() * EMOTES.length)]);
-    return { enunciado: { pergunta: 'repita a sequência de gestos', sequencia: seq, opcoes: [...EMOTES] }, gabarito: { sequencia: seq } };
+    const itens: readonly string[] = Array.isArray(params.itens) && params.itens.length >= 3 ? params.itens.map(String) : EMOTES;
+    const n = Number(params.tamanho || 3); const seq = Array.from({ length: n }, () => itens[Math.floor(r() * itens.length)]);
+    return { enunciado: { pergunta: itens === EMOTES ? 'repita a sequência de gestos' : 'entregue na ordem pedida', sequencia: seq, opcoes: [...itens] }, gabarito: { sequencia: seq } };
   }
   if (tipo === 'peca') {
     const periodo = 2 + Math.floor(r() * 2); const base = embaralhar(FORMAS, r).slice(0, periodo);

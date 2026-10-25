@@ -15,6 +15,7 @@ export const PAPEIS = ['operador_integracao', 'moderador', 'editor_conteudo', 'a
 export type Papel = (typeof PAPEIS)[number];
 
 export const AREAS = {
+  metricas: ['operador_integracao', 'moderador', 'editor_conteudo', 'admin_tecnico'],
   saude: ['operador_integracao', 'admin_tecnico'],
   midias: ['operador_integracao', 'editor_conteudo'],
   comentarios: ['operador_integracao', 'moderador'],

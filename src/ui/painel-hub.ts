@@ -50,7 +50,7 @@ export async function montarHub(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?
     if (p.pet) sp.append(el('p', '', `${p.pet.especie === 'gato' ? '🐱' : '🐶'} ${p.pet.nome} está na frente da sua casa.`));
     else if (p.liberado) sp.append(el('p', '', '🔓 liberado! Escolha gato ou cachorro, a cor e o nome.'));
     else sp.append(el('p', '', `🔒 libera com ${p.meta} pontos · você tem ${p.pontos}`), barra(p.pontos / Math.max(1, p.meta)));
-    const b = el('div', 'hub-bts'); b.append(botao('btn prim', p.pet ? 'trocar meu pet' : p.liberado ? 'adotar pet 🐾' : 'ver os pets', () => abrir('pet'))); sp.append(b);
+    const b = el('div', 'hub-bts'); b.append(botao('btn prim', p.pet ? 'trocar meu pet' : p.liberado ? 'adotar pet 🐾' : 'ver os pets', () => abrir('pet')), botao('btn', '🏛️ o que dá pra construir', () => abrir('construcoes'))); sp.append(b);
   });
 
   /* 2) minha rua */

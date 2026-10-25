@@ -17,7 +17,7 @@ export async function missoesDoDia(c: Exec, userId: string, agora = new Date()) 
   const ms = (await c.query(
     `select m.id, m.titulo, m.descricao, m.tipo_desafio, mc.criado_em concluida_em, mc.contribuiu, mc.motivo_sem_ponto
        from missions m left join mission_completions mc on mc.mission_id = m.id and mc.user_id = $1 and mc.dia = $2
-      where m.ativa order by m.ordem limit 3`, [userId, dia])).rows;
+      where m.ativa order by m.ordem`, [userId, dia])).rows;
   const mor = await moradia(c, userId);
   return {
     dia, morador: !!mor, rua: mor?.streetId ?? null,
@@ -36,10 +36,10 @@ export async function desafioMissao(c: Exec, userId: string, missionId: string, 
   const m = await missaoAtiva(c, missionId); const dia = diaJogo(agora);
   const mor = await moradia(c, userId);
   if (!mor) throw new ErroHttp(403, 'reivindique a sua casa para fazer missões');
-  if (m.id === 'obra.etapa' && !mor.streetId) throw new ErroHttp(409, 'entre numa rua para ajudar a obra');
+  if (m.id.startsWith('obra.') && !mor.streetId) throw new ErroHttp(409, 'entre numa rua para ajudar a obra');
   const feita = (await c.query(`select 1 from mission_completions where user_id = $1 and mission_id = $2 and dia = $3`, [userId, m.id, dia])).rows[0];
   if (feita) throw new ErroHttp(409, 'missão de hoje já concluída: volte amanhã');
-  return emitirDesafio(c, { userId, contexto: ctxMissao(m.id, dia), tipo: m.tipo_desafio, agora });
+  return emitirDesafio(c, { userId, contexto: ctxMissao(m.id, dia), tipo: m.tipo_desafio, params: m.params || {}, agora });
 }
 
 export async function concluirMissao(c: Exec, userId: string, missionId: string, prova: { desafio_id?: unknown; resposta?: unknown }, agora = new Date()) {
@@ -57,7 +57,7 @@ export async function concluirMissao(c: Exec, userId: string, missionId: string,
   if (!ins) return { ja_concluida: true, recompensas: [] };
 
   let obra: any = null;
-  if (m.id === 'obra.etapa' && mor.streetId) obra = await contribuirObra(c, { userId, streetId: mor.streetId, origem: 'missao:obra.etapa', chave: `missao:obra.etapa:${dia}:${userId}`, agora });
+  if (m.id.startsWith('obra.') && mor.streetId) obra = await contribuirObra(c, { userId, streetId: mor.streetId, origem: 'missao:' + m.id, chave: `missao:${m.id}:${dia}:${userId}`, agora });
 
   const temporada = await garantirTemporada(c, agora);
   const elenco = (await c.query(`select street_id from competition_roster where season_id = $1 and user_id = $2`, [temporada.id, userId])).rows[0];

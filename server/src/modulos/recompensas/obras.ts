@@ -84,7 +84,7 @@ export async function obraParaUI(c: Exec, streetId: string, userId?: string | nu
     etapas: (p.etapas as { nome: string; ate: number }[]).map((e) => ({ ...e, concluida: p.progresso >= e.ate })),
     etapa_atual: etapaDe(p.etapas, p.progresso), ajudantes, minha_parte: minhas,
     meu_limite: Math.floor(p.meta_total * Number(p.limite_parcela)), limite_dia: p.limite_dia_usuario,
-    regras: 'cada ajuda vale 10; até 2 ajudas por dia; ninguém faz mais da metade da obra; não existe compra de etapa',
+    regras: `cada ajuda vale 10; até ${p.limite_dia_usuario} ajudas por dia (uma por missão de obra); ninguém faz mais da metade da obra; não existe compra de etapa`,
     concluidas,
   };
 }

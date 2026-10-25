@@ -4,6 +4,7 @@ import { criarMarcadores, raioMarcadorPx } from '../mundo/marcadores';
 import { criarRotulos, type Rotulo } from '../mundo/rotulos';
 import { criarCidades3D } from '../mundo/cidades3d';
 import { criarPets } from '../mundo/pets3d';
+import { criarObras } from '../mundo/obras3d';
 import { criarRaios } from '../mundo/raios';
 import { iniciarRuaViva } from './ruaviva';
 import { iniciarJornal } from './jornal';
@@ -39,6 +40,20 @@ export type Ctx = {
 
 const LS = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ok */ } }, del: (k: string) => { try { localStorage.removeItem(k); } catch { /* ok */ } } };
 
+/** de onde a pessoa veio: utm_source, depois o referrer (só o tipo, nunca a URL) */
+function origemVisita() {
+  const u = (new URLSearchParams(location.search).get('utm_source') || '').toLowerCase();
+  let r = ''; try { r = document.referrer ? new URL(document.referrer).hostname : ''; } catch { /* ok */ }
+  const t = u || r;
+  if (/instagram/.test(t) || t === 'ig') return 'instagram';
+  if (/whatsapp|wa\.me/.test(t)) return 'whatsapp';
+  if (/facebook|fb\.|messenger/.test(t)) return 'facebook';
+  if (/google/.test(t)) return 'google';
+  if (/tiktok/.test(t)) return 'tiktok';
+  if (!t || r === location.hostname) return 'direto';
+  return 'outro';
+}
+
 export async function iniciarApp(mundo: Mundo) {
   let dados: Dados;
   try { dados = await carregarDados(); }
@@ -56,7 +71,13 @@ export async function iniciarApp(mundo: Mundo) {
   const AMARELAS = new Set(dados.ORDEM.slice(0, ehCel ? 45 : 70).map((c) => c.ibge));
   const redesenharMarcadores = () => marc.definir(dados.CID.map((c) => ({ x: c.x, y: c.y, n: c.n, amarelo: AMARELAS.has(c.ibge) || (ctx.sel?.tipo === 'cid' && ctx.sel.c === c) })));
   const cid3d = criarCidades3D(mundo.scene, dados, mundo.camera, ehCel ? { maxCidades: 40, maxCasas: 5000 } : { maxCidades: 100, maxCasas: 13000 });
+  // métricas: visita anônima (id aleatório por aparelho, sem IP), uma por carregamento
+  try {
+    let vid = LS.get('smn_vid'); if (!vid || !/^[a-z0-9]{16,40}$/.test(vid)) { vid = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 24); LS.set('smn_vid', vid); }
+    void fetch('/api/metricas/visita', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: vid, origem: origemVisita(), cel: matchMedia('(pointer: coarse)').matches || innerWidth < 760 }) }).catch(() => {});
+  } catch { /* ok */ }
   const pets3d = criarPets(mundo.scene, cid3d); (window as any).__pets3d = pets3d;
+  const obras3d = criarObras(mundo.scene, cid3d); (window as any).__obras3d = obras3d;
   const rot = criarRotulos($('camada'));
   // cidades "em alta" (demo: as que mais pontuaram na semana) ganham raio de luz na vista de longe
   const raios = criarRaios([...dados.CID].sort((a, b) => b.pts - a.pts).slice(0, 14).map((c) => ({ x: c.x, y: c.y })));
@@ -234,7 +255,7 @@ export async function iniciarApp(mundo: Mundo) {
   const candCid = dados.ORDEM.slice(0, 600);
   let tick = 0;
   mundo.aoPasso((dt, t) => {
-    cid3d.passo(t); pets3d.passo(t, mundo.camera.dist); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
+    cid3d.passo(t); pets3d.passo(t, mundo.camera.dist); obras3d.passo(t, mundo.camera.dist, mundo.camera.cam); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
     const D = mundo.camera.dist;
     marc.passo(D, mundo.renderer.getPixelRatio(), innerWidth < 600 && D > 3000 ? 0.85 : 1);
     if ((tick++ & 1) === 1) return;

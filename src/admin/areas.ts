@@ -166,7 +166,74 @@ export const auditoria: Desenhar = async (main) => {
     tabela([['id', '#'], ['criado_em', 'quando'], ['ator', 'ator'], ['acao', 'ação'], ['alvo', 'alvo'], ['motivo', 'motivo']], r.linhas)));
 };
 
+/* ---------- métricas: visitas ao site (separado), Instagram e casas, engajamento ---------- */
+const nf = (n: number) => n.toLocaleString('pt-BR');
+const pct = (a: number, b: number) => (b ? Math.round((100 * a) / b) + '%' : '—');
+function kpis(itens: [string, string, string?][]) {
+  const g = el('div', 'adm-kpis');
+  for (const [rot, v, sub] of itens) { const k = el('div', 'adm-kpi'); k.append(el('b', '', v), el('span', '', rot)); if (sub) k.append(el('small', '', sub)); g.append(k); }
+  return g;
+}
+/** colunas por dia (uma série; tooltip no hover; a tabela abaixo é a visão em texto) */
+function colunas(dados: { rot: string; v: number; dica: string }[]) {
+  const max = Math.max(1, ...dados.map((d) => d.v));
+  const g = el('div', 'adm-cols'); g.setAttribute('role', 'img'); g.setAttribute('aria-label', 'gráfico de colunas; os números estão na tabela');
+  for (const d of dados) {
+    const c = el('div', 'adm-col'); c.title = d.dica;
+    const b = el('i'); b.style.height = Math.max(d.v ? 3 : 0, Math.round((d.v / max) * 100)) + '%'; c.append(b, el('small', '', d.rot)); g.append(c);
+  }
+  return g;
+}
+function barrasH(dados: { rot: string; v: number; extra?: string }[]) {
+  const max = Math.max(1, ...dados.map((d) => d.v)); const w = el('div', 'adm-barras');
+  for (const d of dados) { const l = el('div', 'adm-bl'); const t = el('div', 'adm-bt'); const i = el('i'); i.style.width = Math.round((d.v / max) * 100) + '%'; t.append(i); l.append(el('span', '', d.rot), t, el('b', '', nf(d.v) + (d.extra ? ' · ' + d.extra : ''))); w.append(l); }
+  return w;
+}
+const ORIGEM: Record<string, string> = { instagram: 'Instagram', whatsapp: 'WhatsApp', facebook: 'Facebook', google: 'Google', tiktok: 'TikTok', direto: 'direto / link salvo', outro: 'outros sites' };
+
+export const metricas: Desenhar = async (main) => {
+  let dias = 30;
+  const desenhar = async () => {
+    const r = await get(`/metricas?dias=${dias}`); main.innerHTML = ''; if (!r.ok) { main.append(erroArea(r)); return; }
+    const t = r.totais, serie = [...r.serie].reverse() as any[];
+    const soma = (k: string) => serie.reduce((s, x) => s + (x[k] || 0), 0);
+    const per = el('div', 'hub-bts');
+    for (const d of [7, 30, 90]) per.append(botao('btn mini' + (d === dias ? ' prim' : ''), `últimos ${d} dias`, () => { dias = d; void desenhar(); }));
+    per.append(botao('btn mini', 'atualizar', () => void desenhar()));
+    main.append(per);
+
+    // 1) visitas ao site
+    const hoje = r.serie[0] || {};
+    main.append(cartao('🌐 Visitas ao site',
+      kpis([['pessoas hoje', nf(t.visitantes_hoje), `${nf(hoje.novos || 0)} novas · ${nf(hoje.voltaram || 0)} voltaram`], ['pessoas em 7 dias', nf(t.visitantes_7d)], ['pessoas em 30 dias', nf(t.visitantes_30d)],
+        [`novas (${dias}d)`, nf(soma('novos'))], [`voltaram (${dias}d)`, nf(soma('voltaram'))], [`no celular (${dias}d)`, pct(soma('celular'), soma('visitantes'))], [`páginas abertas (${dias}d)`, nf(soma('aberturas'))]]),
+      el('h3', '', 'pessoas por dia'),
+      colunas(serie.map((x) => ({ rot: x.dia.slice(0, 2), v: x.visitantes, dica: `${x.sem} ${x.dia}: ${x.visitantes} pessoas (${x.novos} novas, ${x.voltaram} voltaram)` }))),
+      el('p', 'nota', 'pessoa = aparelho que abriu o site no dia (id aleatório do navegador, sem IP). Passe o mouse na coluna para ver o dia. A contagem começou nesta versão.')));
+    const sv = el('div', 'adm-2col');
+    sv.append(cartao('de onde vieram', r.origens.length ? barrasH(r.origens.map((o: any) => ({ rot: ORIGEM[o.origem] || o.origem, v: o.pessoas, extra: o.visitas + ' visitas' }))) : el('p', 'nota', 'sem dados ainda.'), el('p', 'nota', 'dica: no link da bio use ?utm_source=instagram e no WhatsApp ?utm_source=whatsapp.')));
+    sv.append(cartao('horário que entram (Brasília)', r.horas.length ? colunas(Array.from({ length: 24 }, (_, h) => { const v = r.horas.find((x: any) => x.hora === h)?.visitas || 0; return { rot: h % 3 === 0 ? String(h) : '', v, dica: `${h}h: ${v} visitas` }; })) : el('p', 'nota', 'sem dados ainda.')));
+    main.append(sv);
+
+    // 2) instagram e casas
+    main.append(cartao('🏠 Instagram e casas',
+      kpis([['casas no mapa', nf(t.casas)], ['confirmadas', nf(t.confirmadas), pct(t.confirmadas, t.casas) + ' do total'], ['cidades com casa', nf(t.cidades)], ['ruas', nf(t.ruas)],
+        [`comentários (${dias}d)`, nf(soma('comentarios'))], [`casas novas (${dias}d)`, nf(soma('casas_novas'))], [`confirmadas (${dias}d)`, nf(soma('confirmadas'))]]),
+      el('h3', '', 'casas novas por dia'),
+      colunas(serie.map((x) => ({ rot: x.dia.slice(0, 2), v: x.casas_novas, dica: `${x.sem} ${x.dia}: ${x.casas_novas} casas novas, ${x.comentarios} comentários, ${x.confirmadas} confirmadas` })))));
+
+    // 3) engajamento
+    main.append(cartao('🎮 Engajamento',
+      kpis([['contas', nf(t.contas)], [`logins (${dias}d)`, nf(soma('logins'))], [`missões (${dias}d)`, nf(soma('missoes'))], [`votos (${dias}d)`, nf(soma('votos'))], ['pets', nf(t.pets)]])));
+
+    main.append(cartao('Tabela por dia', tabela([['dia', 'dia'], ['sem', ''], ['visitantes', 'pessoas'], ['novos', 'novas'], ['voltaram', 'voltaram'], ['celular', 'celular'], ['aberturas', 'páginas'], ['comentarios', 'comentários'], ['casas_novas', 'casas novas'], ['confirmadas', 'confirmadas'], ['logins', 'logins'], ['missoes', 'missões'], ['votos', 'votos'], ['pets', 'pets']], r.serie)));
+    main.append(cartao('Cidades com mais casas', tabela([['cidade', 'cidade'], ['casas', 'casas'], ['confirmadas', 'confirmadas']], r.cidades)));
+  };
+  await desenhar();
+};
+
 export const AREAS: Record<string, { rot: string; f: Desenhar }> = {
+  metricas: { rot: 'Métricas', f: metricas },
   saude: { rot: 'Saúde', f: saude }, midias: { rot: 'Mídias', f: midias }, comentarios: { rot: 'Comentários', f: comentarios }, reservas: { rot: 'Reservas', f: reservas },
   denuncias: { rot: 'Denúncias', f: denuncias }, cidades: { rot: 'Cidades/ruas', f: cidades }, patrocinadores: { rot: 'Patrocinadores', f: patrocinadores },
   flags: { rot: 'Flags', f: flags }, fila: { rot: 'Fila', f: fila }, auditoria: { rot: 'Auditoria', f: auditoria },

@@ -30,3 +30,21 @@ body.adm-body { overflow: auto; touch-action: auto; overscroll-behavior: auto; b
 .campo-adm input { font: inherit; padding: 10px 12px; border: 3px solid var(--ink, #1d2230); border-radius: 12px; }
 .adm-login .msg.erro { color: #c62828; }
 #adm-quem:empty { display: none; }
+
+/* métricas */
+.adm-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.adm-kpi { background: var(--papel, #fff8e8); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.adm-kpi b { font-size: 26px; line-height: 1.1; }
+.adm-kpi span { font-size: 13px; opacity: .8; }
+.adm-kpi small { font-size: 12px; opacity: .65; }
+.adm-cols { display: flex; align-items: flex-end; gap: 2px; height: 150px; padding-top: 6px; border-bottom: 1px solid rgba(0,0,0,.15); }
+.adm-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; cursor: default; }
+.adm-col i { display: block; width: 100%; max-width: 22px; background: #3a86ff; border-radius: 4px 4px 0 0; }
+.adm-col:hover i { background: #1f5fd1; }
+.adm-col small { font-size: 10px; opacity: .6; height: 14px; }
+.adm-barras { display: flex; flex-direction: column; gap: 6px; }
+.adm-bl { display: grid; grid-template-columns: 130px 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+.adm-bt { height: 12px; background: rgba(0,0,0,.06); border-radius: 6px; overflow: hidden; }
+.adm-bt i { display: block; height: 100%; background: #3a86ff; border-radius: 6px; }
+.adm-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+@media (max-width: 600px) { .adm-bl { grid-template-columns: 90px 1fr auto; font-size: 13px; } }

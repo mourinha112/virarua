@@ -5,7 +5,7 @@ import { exigirLogin, ErroHttp, limite } from '../../http/app';
 import { tx, db } from '../../db/db';
 import { registrarJob } from '../../jobs/fila';
 import { missoesDoDia, desafioMissao, concluirMissao } from './missoes';
-import { obraParaUI, moradia } from './obras';
+import { obraParaUI, moradia, MODELOS } from './obras';
 import { competicaoDaRua, garantirTemporada, recalcularLideres, apurarTemporada } from './competicao';
 import { resumoUsuario } from './ledger';
 
@@ -21,6 +21,29 @@ async function ruaExiste(id: string) {
 }
 
 export function registrar(app: App) {
+  /** público, para o mapa: obras das ruas das cidades pedidas (em andamento + as 2 últimas prontas) e os lotes das casas de cada rua */
+  app.get('/api/obras', limite(120), async (c) => {
+    const ibges = String(c.req.query('ibge') || '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 30);
+    if (!ibges.length) return c.json({ ok: true, ruas: [] });
+    const ruas = (await db().query(
+      `select vs.id, vs.nome, vs.ibge, array_agg(p.lote_index order by p.lote_index) lotes
+         from virtual_streets vs join street_memberships sm on sm.street_id = vs.id and sm.saiu_em is null
+         join houses h on h.id = sm.house_id and h.status = 'reivindicada' join plots p on p.id = h.plot_id
+        where vs.ibge = any($1::int[]) and vs.status in ('ativa','fundacao') group by vs.id limit 400`, [ibges])).rows;
+    if (!ruas.length) return c.json({ ok: true, ruas: [] });
+    const obras = (await db().query(
+      `select street_id, modelo, titulo, status, progresso, meta_total, etapas from (
+         select *, row_number() over (partition by street_id, status order by coalesce(concluida_em, criada_em) desc) rn
+           from community_projects where street_id = any($1::uuid[])) x
+        where status = 'em_obra' or rn <= 2`, [ruas.map((r) => r.id)])).rows;
+    return c.json({ ok: true, ruas: ruas.map((r) => {
+      const minhas = obras.filter((o) => o.street_id === r.id);
+      const lista = minhas.map((o) => ({ modelo: o.modelo, titulo: o.titulo, status: o.status, etapa: (o.etapas as { ate: number }[]).filter((e) => o.progresso >= e.ate).length, etapas: o.etapas.length, pct: Math.round((100 * o.progresso) / o.meta_total) }));
+      // rua sem obra aberta ainda: mostra o canteiro da próxima do rodízio (etapa 0)
+      if (!lista.some((o) => o.status === 'em_obra')) { const m = MODELOS[minhas.filter((o) => o.status === 'concluida').length % MODELOS.length]; lista.unshift({ modelo: m.modelo, titulo: m.titulo, status: 'em_obra', etapa: 0, etapas: m.etapas.length, pct: 0 }); }
+      return { id: r.id, nome: r.nome, ibge: r.ibge, lotes: r.lotes, obras: lista.sort((a, b) => (a.status === 'em_obra' ? -1 : 0) - (b.status === 'em_obra' ? -1 : 0)) };
+    }) });
+  });
   app.get('/api/missoes', async (c) => {
     const u = exigirLogin(c);
     return c.json({ ok: true, ...(await tx((t) => missoesDoDia(t, u.id))) });
