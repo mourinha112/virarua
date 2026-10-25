@@ -9,8 +9,19 @@ put() {
   cat "$E.tmp" > "$E"; rm -f "$E.tmp"
 }
 read -rp "ID da conta do Instagram (só números): " CONTA
-read -rsp "Chave secreta do app do Instagram (não aparece): " SEGREDO; echo
-read -rsp "Token do Instagram, começa com IG (não aparece): " TOKEN; echo
+# o terminal pode quebrar texto longo ao colar: lê várias linhas até uma linha vazia e junta tudo sem espaços
+ler_oculto() {
+  local rotulo="$1" linha junto=""
+  echo "$rotulo" >&2
+  while IFS= read -rs linha; do
+    [ -z "${linha//[[:space:]]/}" ] && [ -n "$junto" ] && break
+    junto+="${linha//[[:space:]]/}"
+  done
+  printf '%s' "$junto"
+}
+SEGREDO=$(ler_oculto "Cole a chave secreta do app do Instagram e aperte Enter DUAS vezes (não aparece):")
+TOKEN=$(ler_oculto "Cole o token do Instagram (começa com IG) e aperte Enter DUAS vezes (não aparece):")
+echo "chave: ${#SEGREDO} caracteres · token: ${#TOKEN} caracteres"
 VT=$(grep '^IG_VERIFY_TOKEN=' "$E" | cut -d= -f2- || true)
 [ -n "$VT" ] || VT=$(openssl rand -hex 16)
 put IG_CONTA_ID "$CONTA"
