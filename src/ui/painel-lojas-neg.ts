@@ -5,6 +5,9 @@ import { PONTOS } from '../jogo/regras';
 import { el, botao, toast } from './dom';
 import { api } from '../api/cliente';
 
+/** WhatsApp da equipe (pagamento e montagem das lojas) */
+const ZAP_EQUIPE = '5521986131173';
+
 const LUPA = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 const TIPO_NOME: Record<string, string> = { pet: 'Pet shop', cafe: 'Cafeteria', lanchonete: 'Lanchonete', restaurante: 'Restaurante', acai: 'Açaí / sorveteria', loja: 'Loja', eventos: 'Espaço de eventos', mercado: 'Mercado / padaria', tech: 'Informática' };
 const pill = (t: string, cls = '') => el('span', 'pt-pill ' + cls, t);
@@ -145,16 +148,26 @@ export function painelNegocio(c: HTMLElement, o: { ibge?: number }, titulo: HTML
     caixa.append(l);
   }
 
+  // pagamento e criação da loja são combinados no WhatsApp da equipe (o pedido fica registrado, se o servidor aceitar)
   async function passo3() {
     caixa.innerHTML = ''; caixa.append(previa());
-    const msg = el('p', 'nota', 'enviando o pedido…'); caixa.append(msg);
-    const m = MUN.get(st.ibge)!;
-    const r = await api.pedidoNegocio({ cidade: `${m.nome} - ${m.uf}`, nome: st.nome, ig: st.ig, zap: st.zap, tipo: st.tipo });
+    const msg = el('p', 'nota', 'preparando o pedido…'); caixa.append(msg);
+    const m = MUN.get(st.ibge)!; const faixa = PRECOS.find((p) => m.pop <= p.ate)!;
+    const r = await api.pedidoNegocio({ cidade: `${m.nome} - ${m.uf}`, nome: st.nome, ig: st.ig, zap: st.zap, tipo: st.tipo }).catch(() => ({ ok: false } as any));
     msg.remove();
-    if (!r.ok) { caixa.append(el('p', 'msg erro', r.erro || 'não consegui enviar agora.'), botao('btn mini', 'tentar de novo', () => passo3()), botao('btn mini', '← voltar', () => { st.passo = 1; render(); })); return; }
-    caixa.append(el('h3', 'neg-h', 'pedido recebido'), el('p', 'neg-codigo', r.codigo));
-    caixa.append(el('p', '', 'A equipe confere o negócio antes de publicar. Nada é cobrado automaticamente: o pagamento só é combinado depois da aprovação.'));
-    caixa.append(botao('btn bloco', 'copiar o código', async () => { try { await navigator.clipboard.writeText(r.codigo); toast('código copiado'); } catch { toast(r.codigo); } }));
+    const texto = [
+      'Oi! Quero colocar minha loja no mapa do ViraRua 🏪',
+      `Negócio: ${st.nome}`, `Tipo: ${st.tipo}`, `Cidade: ${m.nome} - ${m.uf}`,
+      st.ig ? `Instagram: @${st.ig.replace(/^@/, '')}` : '', `Meu WhatsApp: ${st.zap}`,
+      `Plano: ${faixa.plano} · R$ ${faixa.valor} · 10 dias`, r.ok && r.codigo ? `Código do pedido: ${r.codigo}` : '',
+    ].filter(Boolean).join('\n');
+    const link = `https://wa.me/${ZAP_EQUIPE}?text=${encodeURIComponent(texto)}`;
+    caixa.append(el('h3', 'neg-h', 'falta só o pagamento'));
+    if (r.ok && r.codigo) caixa.append(el('p', 'neg-codigo', r.codigo));
+    caixa.append(el('p', '', 'Toque no botão abaixo pra falar com a equipe no WhatsApp. A gente combina o pagamento no Pix e monta a sua loja no mapa.'));
+    caixa.append(Object.assign(el('a', 'btn prim bloco', 'chamar no WhatsApp'), { href: link, target: '_blank', rel: 'noopener noreferrer' }));
+    caixa.append(botao('btn mini', '← voltar', () => { st.passo = 2; render(); }));
+    window.open(link, '_blank', 'noopener');
   }
 
   function render() { pintaPassos(); if (st.passo === 1) passo1(); else if (st.passo === 2) passo2(); else void passo3(); c.scrollTop = 0; }
