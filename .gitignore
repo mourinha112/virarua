@@ -1,0 +1,18 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.vercel
+public/dados/*.js
+public/dados/*.json
+!public/dados/.gitkeep
+scripts/geo/raw/
+server/.pgdata/
+
+# gerados (refazer com npm run capturas / estúdio)
+docs/capturas/
+video-studio/out/
+*.log
+.DS_Store
+Thumbs.db

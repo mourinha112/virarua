@@ -1,0 +1,14 @@
+video-studio do Seu Mundo Novo
+
+Inclui trecho derivado de Motionmaxxing (https://github.com/Tejashmakwana/motionmaxxing),
+commit 8c8ec0f2a6f6c9a0da15cd24f7b1298ab298368c (06/10/2026), © Tejas Makwana, licenciado sob
+Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0):
+  - as 12 curvas de easing medidas (runtime/motion.js da Motionmaxxing), reescritas em
+    templates/_base/runtime.js sem alteração numérica.
+O contrato de seek (window.__seek / __duration / __ready) segue o descrito em scripts/render.mjs da
+Motionmaxxing, para os templates poderem ser renderizados também por aquele script.
+
+NÃO incluído (licença própria, não open source): GSAP 3.12.5 empacotado na Motionmaxxing
+(GreenSock Standard "No Charge" License). O runtime daqui não usa GSAP.
+
+Fontes: Nunito e Lilita One via Google Fonts (SIL Open Font License 1.1), as mesmas do jogo.

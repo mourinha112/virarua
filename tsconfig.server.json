@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "server",
+    "src/dados",
+    "src/jogo",
+    "src/data"
+  ],
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  },
+  "exclude": [
+    "video-studio"
+  ]
+}

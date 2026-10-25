@@ -1,0 +1,39 @@
+{
+  "name": "seumundonovo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "geo": "tsx scripts/geo/build-terreno.ts",
+    "dados": "tsx scripts/build-dados.ts",
+    "dados:mock": "tsx scripts/build-dados.ts --mock",
+    "server": "tsx watch server/src/index.ts",
+    "server:start": "tsx server/src/index.ts",
+    "db:migrar": "tsx server/src/db/migrar.ts up",
+    "db:reverter": "tsx server/src/db/migrar.ts down",
+    "db:semear": "tsx server/src/db/semear.ts",
+    "db:local": "bash scripts/db-local.sh",
+    "test": "vitest run",
+    "capturas": "tsx scripts/capturas/capturar.ts docs/capturas/atual",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.17",
+    "hono": "^4.13.13",
+    "pg": "^8.23.1",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.23.1",
+    "@types/three": "^0.170.0",
+    "playwright-core": "^1.64.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.2.7"
+  }
+}

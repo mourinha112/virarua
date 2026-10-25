@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Seu Mundo Novo · painel</title>
+  <meta name="theme-color" content="#b3d1ee" />
+  <link rel="icon" href="/icones/icone.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Lilita+One&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/estilo.css" />
+</head>
+<body class="adm-body">
+  <!-- Produção: este painel precisa ficar atrás de autenticação forte (passkey/2FA no proxy ou IdP). Ver server/src/modulos/admin/auth.ts -->
+  <header class="adm-topo">
+    <h1 class="out">painel</h1>
+    <span id="adm-quem" class="adm-quem"></span>
+  </header>
+  <nav id="adm-nav" class="adm-nav" aria-label="áreas do painel"></nav>
+  <main id="adm-main" class="adm-main" tabindex="-1"></main>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="/src/admin/main.ts"></script>
+</body>
+</html>

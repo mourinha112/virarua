@@ -1,0 +1,342 @@
+/* Barra de abas e painéis de tela cheia. Cada painel é montado sob demanda e redesenhado ao abrir. */
+import type { Ctx } from './app';
+import type { Cidade } from '../dados/dados';
+import { fmtN, MUN, normHandle, semAcento } from '../dados/dados';
+import { CARGOS, NIVEIS, PONTOS, VOTO, proximoFechamento } from '../jogo/regras';
+import { $, el, botao, botaoFechar, toast, ICONES } from './dom';
+import { api } from '../api/cliente';
+import { montarPainelRua } from './painel-rua';
+import { montarPainelAvatar } from './painel-avatar';
+import { montarPainelEleicoes } from './painel-eleicoes';
+import { montarPainelMissoes } from './painel-missoes';
+import { montarPainelLoja } from './painel-loja';
+import { painelLojas, painelNegocio } from './painel-lojas-neg';
+import { compartilharCartao } from './cartao-story';
+import { montarHub } from './painel-hub';
+import { montarJornal } from './jornal';
+
+export type Paineis = { abrir(id: string, opts?: any): void; fechar(id?: string): void; fecharTopo(): boolean; ativo(): string | null };
+type Def = { titulo: string; desenhar(corpo: HTMLElement, opts: any): void | Promise<void>; ajuda?: boolean };
+
+const TABS: { id: string; rot: string; ic: string; central?: boolean }[] = [
+  { id: 'casa', rot: 'Minha Casa', ic: 'casa' },
+  { id: 'minha', rot: 'Minha cidade', ic: 'cidade' },
+  { id: 'eleicoes', rot: 'Eleições', ic: 'urna', central: true },
+  { id: 'ranking', rot: 'Ranking', ic: 'ranking' },
+  { id: 'lojas', rot: 'Lojas', ic: 'loja' },
+];
+
+export function montarPaineis(ctx: Ctx): Paineis {
+  const { dados } = ctx, D = dados.p;
+  const raiz = $('paineis'); const secoes = new Map<string, HTMLElement>(); let aberto: string | null = null;
+  let descarte: { dispose(): void } | null = null;
+
+  const DEFS: Record<string, Def> = {
+    casa: { titulo: 'Minha Casa', desenhar: (c) => minhaCasa(c) },
+    eleicoes: { titulo: 'Eleições', desenhar: (c, o) => eleicoes(c, o) },
+    ranking: { titulo: 'Ranking', desenhar: (c, o) => ranking(c, o), ajuda: true },
+    lojas: { titulo: 'lojas', desenhar: (c) => painelLojas(c, ctx, () => fechar()) },
+    como: { titulo: 'como funciona', desenhar: (c) => como(c) },
+    negocio: { titulo: 'seu negócio no mapa', desenhar: (c, o) => painelNegocio(c, o, secoes.get('negocio')!.querySelector('h1') as HTMLElement) },
+    reivindicar: { titulo: 'reivindicar casa', desenhar: (c, o) => reivindicar(c, o) },
+    ruas: { titulo: 'minha rua', desenhar: (c, o) => montarPainelRua(c, { ruaId: o?.ruaId, ibge: o?.cid?.ibge, cidadeNome: o?.cid?.nome, abrirAvatar: () => abrir('avatar'), aoMudarDeRua: () => toast('mudança registrada: sua casa e seu avatar vão junto') }) },
+    avatar: { titulo: 'meu avatar', desenhar: async (c) => { descarte?.dispose(); descarte = await montarPainelAvatar(c, { abrirReivindicar: () => abrir('reivindicar', { gi: ctx.eu() }), aoSalvar: () => { toast('avatar salvo'); (window as any).__carregarEu?.(); } }); } },
+    missoes: { titulo: 'missões do dia', desenhar: (c) => montarPainelMissoes(c, ctx) },
+    videos: { titulo: 'destaques da semana', desenhar: (c) => videos(c) },
+    notificacoes: { titulo: 'notificações', desenhar: (c) => notificacoes(c) },
+    jornal: { titulo: 'jornal do dia', desenhar: (c) => montarJornal(c, ctx, abrir, fechar) },
+    loja: { titulo: 'loja', desenhar: (c, o) => montarPainelLoja(c, ctx, o?.id) },
+  };
+
+  /* explicação em 3 passos no topo dos sistemas que confundem */
+  const EXPLICA: Record<string, { tit: string; passos: [string, string][] }> = {
+    ruas: { tit: 'como funciona a sua rua', passos: [['🏠', 'toda casa fica numa rua da cidade (até 24 casas por rua)'], ['🤝', 'chame amigos com o convite: eles viram seus vizinhos e aparecem online na rua'], ['🏆', 'a rua faz missões juntas, constrói a obra e disputa o troféu da semana']] },
+    eleicoes: { tit: 'como funciona a eleição virtual', passos: [['✋', 'seg a qui: quem quiser se candidata (líder da rua, prefeito ou presidente)'], ['🗳️', 'sex a dom: cada morador vota 1 vez por cargo; pode trocar até fechar'], ['👑', 'dom 21h: quem tiver mais votos assume a semana seguinte e escolhe obras e festas']] },
+    avatar: { tit: 'o seu avatar', passos: [['🎨', 'escolha pele, cabelo, roupa, cores e acessório'], ['💾', 'salve: ele aparece na frente da sua casa no mapa'], ['👋', 'quando você entra, seus vizinhos te veem online e podem acenar']] },
+  };
+  function explicacao(c: HTMLElement, id: string) {
+    const e = EXPLICA[id]; if (!e) return;
+    const b = el('div', 'cartao-b expl'); b.append(el('h2', '', e.tit));
+    for (const [ic, t] of e.passos) { const l = el('div', 'expl-p'); l.append(el('span', 'expl-ic', ic), el('span', '', t)); b.append(l); }
+    c.append(b);
+  }
+
+  /* ---------- barra ---------- */
+  const tab = $('tabbar');
+  for (const t of TABS) {
+    const b = botao('tab' + (t.central ? ' central' : ''), '', () => clicarTab(t.id), t.rot);
+    b.dataset.tab = t.id;
+    const ic = el('span', 'ico'); ic.innerHTML = ICONES[t.ic]; b.append(ic, el('span', '', t.rot));
+    if (t.id === 'lojas' && D.lojas.length) b.append(el('i', 'selo'));
+    tab.append(b);
+  }
+  function pintarTabs() { tab.querySelectorAll<HTMLElement>('.tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === aberto || (b.dataset.tab === 'minha' && aberto === null && ctx.sel?.tipo === 'cid' && ctx.sel.c === cidadeEu()))); }
+  function cidadeEu(): Cidade | null { const gi = ctx.eu(); return gi >= 0 ? dados.CID[dados.CID_DE[gi]] : null; }
+  function clicarTab(id: string) {
+    if (aberto === id) { fechar(); return; }
+    if (id === 'minha') {
+      fechar(); const c = cidadeEu();
+      if (!c) { toast('escreva o seu @ na busca para achar a sua casa'); $('q').focus(); return; }
+      ctx.mostrarCidade(c); pintarTabs(); return;
+    }
+    abrir(id);
+  }
+  $('ajuda').onclick = () => abrir('como');
+  $('abrirNegocio').onclick = () => abrir('negocio');
+
+  /* ---------- abrir/fechar ---------- */
+  function abrir(id: string, opts: any = {}) {
+    const def = DEFS[id]; if (!def) return;
+    if (aberto && aberto !== id) secoes.get(aberto)!.hidden = true;
+    let s = secoes.get(id);
+    if (!s) {
+      s = el('section', 'painel'); s.id = 'p-' + id; s.setAttribute('aria-label', def.titulo);
+      const topo = el('header', 'painel-topo');
+      if (def.ajuda) topo.append(botao('fechar ajuda-rk', '?', () => abrir('como'), 'como funciona'));
+      topo.append(el('h1', 'out', def.titulo), botaoFechar(() => fechar(), 'voltar pro mapa'));
+      s.append(topo, el('div', 'painel-corpo')); raiz.append(s); secoes.set(id, s);
+    }
+    s.hidden = false; aberto = id;
+    const corpo = s.querySelector('.painel-corpo') as HTMLElement; corpo.innerHTML = ''; corpo.scrollTop = 0;
+    explicacao(corpo, id);
+    void def.desenhar(corpo, opts);
+    pintarTabs();
+  }
+  function fechar(id?: string) { const k = id || aberto; if (!k) return; const s = secoes.get(k); if (s) s.hidden = true; if (aberto === k) aberto = null; pintarTabs(); }
+
+  /* ---------- Minha Casa ---------- */
+  function pedirEu(c: HTMLElement, depois: () => void) {
+    const box = el('div', 'cartao-b');
+    box.append(el('h2', '', 'Qual é o seu @?'), el('p', 'nota', 'digite o @ que comentou a cidade. Para editar a casa, reivindique pelo Instagram.'));
+    const f = el('div', 'form-campo'); const inp = el('input'); inp.placeholder = '@ seu @ do Instagram'; inp.autocapitalize = 'none'; inp.setAttribute('autocomplete', 'off'); f.append(inp); box.append(f);
+    const msg = el('p', 'msg');
+    const ok = botao('btn prim bloco', 'Continuar', () => {
+      const h = normHandle(inp.value), gi = dados.POR_HANDLE.get(h);
+      if (gi === undefined) { msg.className = 'msg erro'; msg.textContent = 'não achei esse @ no mapa. Comente sua cidade e UF num post de campanha para ganhar a casa.'; return; }
+      ctx.lembrarEu(gi); depois();
+    });
+    inp.onkeydown = (e) => { if (e.key === 'Enter') ok.click(); };
+    box.append(el('div', 'form-campo'), ok, msg); c.append(box); setTimeout(() => inp.focus(), 50);
+  }
+  async function minhaCasa(c: HTMLElement) {
+    // conta real (sessão no servidor): casa, rua, avatar e eleição da rua
+    const eu = await api.eu();
+    if (eu.ok && eu.casa) { await montarHub(c, ctx, abrir, fechar, eu); return; }
+    if (location.hostname === 'localhost' || /^(127.|192.168.|10.)/.test(location.hostname)) {
+      const t = el('div', 'cartao-b papel');
+      t.append(el('h2', '', 'testar logado (desenvolvimento)'), el('p', 'nota', 'cria uma conta de teste com casa reivindicada, avatar e 5 vizinhos na mesma rua, para você experimentar avatar, rua e eleição de rua sem o Instagram.'));
+      const sel = el('select', 'frase-inp');
+      for (const [ib, n] of [[3304557, 'Rio de Janeiro - RJ'], [3301702, 'Duque de Caxias - RJ'], [3550308, 'São Paulo - SP'], [3205309, 'Vitória - ES'], [3205200, 'Vila Velha - ES']] as [number, string][]) { const o = el('option', '', n); o.value = String(ib); sel.append(o); }
+      const msg = el('p', 'msg');
+      t.append(sel, botao('btn prim bloco', 'entrar como teste', async () => { msg.textContent = 'criando…'; const r = await api.devEntrar(Number(sel.value)); if (!r.ok) { msg.className = 'msg erro'; msg.textContent = r.erro; return; } toast('entrou como teste em ' + r.cidade); (window as any).__carregarEu?.(); abrir('casa'); }), msg);
+      c.append(t);
+    }
+    const gi = ctx.eu();
+    if (gi < 0) { pedirEu(c, () => abrir('casa')); return; }
+    const h = dados.USR[gi], cid = dados.CID[dados.CID_DE[gi]], nv = dados.NV[gi];
+    const top = el('div', 'cartao-b am');
+    top.append(el('h2', '', '@' + h), el('p', '', `${cid.nome} · ${cid.uf} · nível ${nv} (${NIVEIS[nv - 1].nome})`));
+    top.append(botao('btn bloco', 'ver minha casa no mapa', () => { fechar(); ctx.mostrarCasa(gi); }));
+    c.append(top);
+    const av = el('div', 'cartao-b'); av.append(el('h2', '', 'avatar, rua e missões'), el('p', 'nota', 'editar avatar e participar da rua exigem a casa reivindicada pelo Instagram.'));
+    const lin = el('div', 'linha'); lin.append(botao('btn mini prim', 'meu avatar', () => abrir('avatar')), botao('btn mini', 'minha rua', () => abrir('ruas', { cid })), botao('btn mini', 'missões do dia', () => abrir('missoes')));
+    av.append(lin, botao('btn mini', 'reivindicar minha casa', () => abrir('reivindicar', { gi })));
+    c.append(av);
+    const pt = el('div', 'cartao-b');
+    pt.append(el('h2', '', 'pontos'));
+    for (const [r, v] of [['nesta semana', D.pts[gi]], ['no total (XP)', D.tot[gi]]] as [string, number][]) { const l = el('div', 'linha'); l.append(el('span', '', r), el('b', '', fmtN(v))); pt.append(l); }
+    c.append(pt);
+    c.append(botao('btn mini', 'trocar @', () => { ctx.esquecerEu(); abrir('casa'); }));
+  }
+
+  /* ---------- Eleições (jogo clássico: quem mais pontua na semana manda) ---------- */
+  async function eleicoes(c: HTMLElement, o: { alvo?: number }) {
+    const fim = proximoFechamento();
+    const topo = el('div', 'cartao-b escuro');
+    topo.append(el('h2', '', 'eleição virtual da semana'), el('p', '', 'cargos do jogo, sem vínculo com eleições reais. A apuração fecha domingo às 21h (Brasília).'));
+    const rel = el('p', 'contagem'); topo.append(rel);
+    const pinta = () => { const ms = Math.max(0, fim - Date.now()); rel.textContent = `fecha em ${Math.floor(ms / 86400000)}d ${String(Math.floor((ms % 86400000) / 3600000)).padStart(2, '0')}h ${String(Math.floor((ms % 3600000) / 60000)).padStart(2, '0')}min`; };
+    pinta(); const t = setInterval(() => (rel.isConnected ? pinta() : clearInterval(t)), 30000);
+    c.append(topo);
+
+    const oficial = el('div'); c.append(oficial); montarPainelEleicoes(oficial, ctx);
+
+    // placar do jogo clássico por pontos
+    const tabs = el('div', 'seg'); const caixa = el('div');
+    const ordem: (keyof typeof CARGOS)[] = ['P', 'S', 'G', 'D', 'M', 'V'];
+    const desenharCargo = (k: keyof typeof CARGOS) => {
+      tabs.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
+      caixa.innerHTML = '';
+      const lista: number[] = []; for (let g = 0; g < D.n; g++) if (D.cg[g] === k) lista.push(g);
+      lista.sort((a, b) => D.pts[b] - D.pts[a]);
+      const max = D.pts[lista[0]] || 1;
+      lista.slice(0, 10).forEach((g, i) => {
+        const b = botao('v3-bar', '', () => { fechar(); ctx.mostrarCasa(g); });
+        const cid = dados.CID[dados.CID_DE[g]];
+        const bb = el('span', 'b'); bb.append(el('b', '', '@' + dados.USR[g]), el('small', '', `${cid.nome} · ${cid.uf}`)); const bar = el('i'); const s = el('s'); s.style.width = Math.round((D.pts[g] / max) * 100) + '%'; bar.append(s); bb.append(bar);
+        b.append(el('span', 'pos', i + 1), bb, el('span', 'n', fmtN(D.pts[g]) + ' pts')); caixa.append(b);
+      });
+    };
+    for (const k of ordem) { const b = botao('', CARGOS[k].nome, () => desenharCargo(k)); b.dataset.k = k; tabs.append(b); }
+    const pl = el('div', 'cartao-b'); pl.append(el('h2', '', 'ranking de pontos da semana (não decide cargo)'), tabs, caixa);
+    c.append(pl); desenharCargo('P');
+    if (o?.alvo !== undefined) toast(`para votar em @${dados.USR[o.alvo]}, ele precisa estar inscrito como candidato`, 4000);
+    c.append(el('p', 'contagem', `voto clássico: vale ${VOTO.base} + 1 por hora seguida votando · 1 por hora em cada cargo`));
+  }
+
+  /* ---------- Ranking ---------- */
+  function ranking(c: HTMLElement, o: { cid?: Cidade }) {
+    const eu = ctx.eu();
+    const seg = el('div', 'seg'); const corpo = el('div'); c.append(el('div', 'centro'), seg, corpo);
+    const cidRef = o?.cid || (eu >= 0 ? dados.CID[dados.CID_DE[eu]] : dados.ORDEM[0]);
+    if (!cidRef) { const v = el('div', 'cartao-b'); v.append(el('h2', '', 'o ranking começa agora'), el('p', 'nota', 'ainda não tem nenhuma casa no mapa. Comente sua cidade no post do jogo no Instagram e seja o primeiro morador do Brasil virtual.')); corpo.append(v); return; }
+    const escopos = [['cidade', 'Cidade'], ['estado', 'Estado'], ['brasil', 'Brasil']];
+    const desenhar = (k: string) => {
+      seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
+      corpo.innerHTML = '';
+      let lista: number[] = [];
+      let titulo = '';
+      if (k === 'cidade') { for (let g = cidRef.ini; g < cidRef.ini + cidRef.n; g++) lista.push(g); titulo = `${cidRef.nome} · ${cidRef.uf}`; }
+      else if (k === 'estado') { for (const ci of dados.ESTADOS.get(cidRef.uf)!.cidades) for (let g = ci.ini; g < ci.ini + ci.n; g++) lista.push(g); titulo = dados.ESTADOS.get(cidRef.uf)!.nome; }
+      else { for (let g = 0; g < D.n; g++) lista.push(g); titulo = 'Brasil'; }
+      lista.sort((a, b) => D.pts[b] - D.pts[a] || a - b);
+      const cab = el('div', 'cartao-b'); cab.append(el('h2', '', titulo), el('p', 'nota', `${fmtN(lista.length)} moradores · ${fmtN(lista.reduce((s, g) => s + D.pts[g], 0))} pontos na semana`));
+      if (k === 'cidade') cab.append(botao('btn mini', 'outra cidade', () => { fechar(); $('q').focus(); }), botao('btn mini', 'ver no mapa', () => { fechar(); ctx.mostrarCidade(cidRef); }));
+      corpo.append(cab);
+      if (lista[0] !== undefined) {
+        const ch = botao('rk-chefe', '', () => { fechar(); ctx.mostrarCasa(lista[0]); });
+        const t = el('span'); t.append(el('small', '', k === 'cidade' ? `prefeito de ${cidRef.nome}` : k === 'estado' ? `governador de ${cidRef.uf}` : 'presidente do Brasil'), el('b', '', '@' + dados.USR[lista[0]]));
+        const n = el('span', 'n'); n.append(fmtN(D.pts[lista[0]]), el('small', '', ' pontos'));
+        ch.append(t, n); corpo.append(ch);
+      }
+      const box = el('div', 'cartao-b');
+      lista.slice(0, 100).forEach((g, i) => {
+        const b = botao('rk' + (i < 3 ? ' p' + (i + 1) : '') + (g === eu ? ' eu' : ''), '', () => { fechar(); ctx.mostrarCasa(g); });
+        const cg = dados.cargo(g); const nm = el('span', 'nome'); nm.append(el('b', '', '@' + dados.USR[g]), el('small', '', cg ? CARGOS[cg].nome : 'morador'));
+        b.append(el('span', 'pos', i + 1), nm, el('span', 'n', fmtN(D.pts[g]))); box.append(b);
+      });
+      corpo.append(box);
+      if (eu >= 0) {
+        const pos = lista.indexOf(eu) + 1;
+        if (pos > 100) { const me = el('div', 'cartao-b papel'); me.append(el('p', '', `você: @${dados.USR[eu]} · #${fmtN(pos)} · ${fmtN(D.pts[eu])} pontos`)); corpo.append(me); }
+      }
+    };
+    for (const [k, r] of escopos) { const b = botao('', r, () => desenhar(k)); b.dataset.k = k; seg.append(b); }
+    desenhar(o?.cid ? 'cidade' : eu >= 0 ? 'cidade' : 'brasil');
+  }
+
+  /* ---------- Lojas ---------- */
+  function lojas(c: HTMLElement) {
+    const hero = el('div', 'cartao-b papel');
+    hero.append(el('h2', '', 'visite as lojas do mapa'), el('p', 'nota', `cada loja é um espaço patrocinado e identificado. Seguir uma loja pelo botão do cartão vale +${PONTOS.seguirLoja} pts (1 vez por loja).`));
+    c.append(hero);
+    const busca = el('input'); busca.placeholder = 'buscar loja ou cidade'; busca.className = 'frase-inp'; c.append(busca);
+    const lista = el('div'); c.append(lista);
+    const pinta = () => {
+      lista.innerHTML = ''; const t = semAcento(busca.value);
+      const l = D.lojas.filter((x) => !t || semAcento(x.nome + ' ' + (MUN.get(x.ibge)?.nome || '')).includes(t));
+      if (!l.length) lista.append(el('p', 'msg', 'nenhuma loja encontrada.'));
+      for (const x of l) {
+        const m = MUN.get(x.ibge); const card = el('div', 'cartao-b'); const it = el('div', 'lj-item'); const bola = el('span', 'bola'); bola.style.background = x.cor;
+        const tx = el('span', 't'); tx.append(el('b', '', x.nome), el('small', '', `${x.tipo} · ${m?.nome}-${m?.uf} · até ${x.ate.split('-').reverse().slice(0, 2).join('/')}`));
+        it.append(bola, tx, botao('btn mini prim', 'visitar', () => { fechar(); const cc = dados.POR_IBGE.get(x.ibge); if (cc) ctx.mostrarCidade(cc); }));
+        card.append(it, el('p', 'nota', x.desc), el('span', 'etiq am', 'patrocinado')); lista.append(card);
+      }
+    };
+    busca.oninput = pinta; pinta();
+  }
+
+  /* ---------- Como funciona ---------- */
+  function como(c: HTMLElement) {
+    const o = el('div', 'cartao-b cs-obj'); o.append(el('small', '', 'O OBJETIVO'), el('h2', '', 'construir o Brasil virtual e cuidar da sua cidade'), el('p', '', 'comenta sua cidade → ganha sua casa → ganha pontos e ajuda sua rua e sua cidade → a cada semana tem eleição virtual e competição de ruas · domingo 21h fecha e começa de novo'));
+    c.append(o);
+    const card = (tit: string, ic: string, itens: string[], escuro = false) => { const s = el('div', 'cartao-b cs-c' + (escuro ? ' escuro' : '')); const h = el('h3'); const i = el('span', 'cs-ic'); i.innerHTML = ICONES[ic]; h.append(i, tit); const ul = el('ul'); for (const t of itens) ul.append(el('li', '', t)); s.append(h, ul); c.append(s); };
+    card('sua casa', 'casa', ['comenta sua cidade e UF num post de campanha', `a casa nasce em até 20 min com ${PONTOS.casa} pontos`, 'cresce com os seus pontos e nunca encolhe', 'para editar e ter avatar, reivindique pelo Instagram (link privado)']);
+    card('sua rua', 'rua', ['toda casa fica numa rua virtual da sua cidade', 'ruas disputam um troféu semanal com missões', 'competição de ruas não escolhe prefeito']);
+    card('eleição virtual', 'urna', ['cargos do jogo: líder da rua, prefeito e presidente', 'um voto por eleitor em cada eleição, pode trocar até fechar', 'pontos, compartilhamentos e pagamentos não mudam o peso do voto', 'eleição sem quorum deixa o cargo vago, sem inventar vencedor'], true);
+    const duv = el('div', 'cartao-b'); duv.append(el('h2', '', 'dúvidas'));
+    for (const [p, r] of [
+      ['quem vê meu voto?', 'ninguém vê em quem você votou: só os totais aparecem.'],
+      ['zerou meus pontos?', 'domingo zera só os pontos da semana. Casa, nível e XP ficam.'],
+      ['não recebi os pontos', 'entram em até 20 min. Story só conta se marcar o jogo.'],
+      ['é eleição de verdade?', 'não. É um jogo, sem nenhum vínculo com governo ou eleição real.'],
+      ['e o app?', 'no celular, use "adicionar à tela inicial": vira app com ícone e tela cheia.'],
+    ]) { const q = el('div', 'cs-q'); q.append(el('b', '', p), el('span', '', r)); duv.append(q); }
+    c.append(duv);
+    const nv = el('div', 'cartao-b'); nv.append(el('h2', '', 'níveis da casa'));
+    for (const i of [0, 9, 19, 29, 39, 49]) { const l = el('div', 'linha'); l.append(el('span', '', `${i + 1} · ${NIVEIS[i].nome}`), el('b', '', fmtN(NIVEIS[i].min) + '+ pts')); nv.append(l); }
+    c.append(nv);
+  }
+
+  /* ---------- Seu negócio no mapa ---------- */
+  function negocio(c: HTMLElement, o: { ibge?: number }) {
+    const box = el('div', 'cartao-b');
+    box.append(el('h2', '', 'Assim o seu negócio aparece no mapa'), el('p', 'nota', 'vira um prédio com selo "patrocinado" na cidade escolhida. Estar no mapa é um cenário virtual: não afirma presença física.'));
+    const campos: [string, string, string][] = [['cidade', 'digite a cidade', 'cidade'], ['nome', 'ex.: Padaria do Zé', 'nome do negócio'], ['ig', 'seunegocio', '@ do Instagram do negócio'], ['zap', '(27) 99999-0000', 'WhatsApp do negócio']];
+    const vals: Record<string, HTMLInputElement> = {};
+    for (const [k, ph, rot] of campos) { const f = el('div', 'form-campo'); const lb = el('label', '', rot); const i = el('input'); i.placeholder = ph; vals[k] = i; f.append(lb, i); box.append(f); }
+    if (o?.ibge) { const m = MUN.get(o.ibge); if (m) vals.cidade.value = `${m.nome} - ${m.uf}`; }
+    const tipos = el('div', 'tipos'); let tipo = 'cafe';
+    for (const [k, n] of [['cafe', 'Cafeteria'], ['restaurante', 'Restaurante'], ['loja', 'Loja'], ['pet', 'Pet shop'], ['eventos', 'Espaço de eventos']]) { const b = botao(k === tipo ? 'on' : '', n, () => { tipo = k; tipos.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); }); tipos.append(b); }
+    const ft = el('div', 'form-campo'); ft.append(el('label', '', 'tipo'), tipos); box.append(ft);
+    const msg = el('p', 'msg');
+    box.append(botao('btn prim bloco', 'enviar para análise', async () => {
+      if (!vals.nome.value.trim() || !vals.cidade.value.trim()) { msg.className = 'msg erro'; msg.textContent = 'preencha cidade e nome do negócio.'; return; }
+      const r = await api.pedidoNegocio({ cidade: vals.cidade.value, nome: vals.nome.value, ig: vals.ig.value, zap: vals.zap.value, tipo });
+      msg.className = 'msg ' + (r.ok ? 'ok' : 'erro'); msg.textContent = r.ok ? `pedido ${r.codigo} recebido. A equipe verifica o negócio antes de publicar; nada é cobrado automaticamente.` : r.erro || 'não consegui enviar agora.';
+    }), msg);
+    c.append(box);
+    c.append(el('p', 'nota', 'não aceitamos apostas, IPTV/pirataria, conteúdo adulto, política partidária, armas ou remédio controlado. Bares e promoções de bebida ficam desabilitados até a revisão de faixa etária.'));
+  }
+
+  /* ---------- Notificações ---------- */
+  async function notificacoes(c: HTMLElement) {
+    const r = await fetch('/api/notificacoes', { credentials: 'same-origin' }).then((x) => x.json()).catch(() => null);
+    if (!r?.ok) { c.append(el('p', 'msg', 'entre na sua conta para ver as notificações.')); return; }
+    if (!r.itens.length) c.append(el('div', 'cartao-b', 'nada novo por aqui. Quando sua rua eleger um líder, a obra ficar pronta ou alguém entrar na sua empresa, aparece aqui.'));
+    for (const n of r.itens) {
+      const b = el('button', 'cartao-b notif' + (n.lida ? '' : ' nova')); (b as HTMLButtonElement).type = 'button';
+      b.append(el('b', '', n.titulo), el('span', '', n.texto), el('small', 'nota', new Date(n.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })));
+      b.onclick = () => { if (n.acao) abrir(n.acao); }; c.append(b);
+    }
+    const csrf = decodeURIComponent(document.cookie.match(/(?:^|; )smn_csrf=([^;]+)/)?.[1] || '');
+    void fetch('/api/notificacoes/lidas', { method: 'POST', credentials: 'same-origin', headers: { 'x-csrf': csrf } }).then(() => (window as any).__pollNotif?.());
+  }
+
+  /* ---------- Destaques da semana (vídeos gerados pelo estúdio) ---------- */
+  function videos(c: HTMLElement) {
+    c.append(el('p', 'nota', 'vídeos gerados automaticamente pelo estúdio a partir do que aconteceu no jogo. Estes são de DEMONSTRAÇÃO, com dados fictícios.'));
+    for (const [arq, tit] of [['casa', 'nasceu uma casa nova'], ['votacao', 'disputa apertada na eleição virtual'], ['resultado', 'resultado da eleição virtual']]) {
+      const b = el('div', 'cartao-b'); b.append(el('h2', '', tit));
+      const v = el('video'); v.src = '/videos/' + arq + '.mp4'; v.poster = '/videos/' + arq + '.jpg'; v.controls = true; v.playsInline = true; v.preload = 'none'; v.style.cssText = 'width:100%;max-height:70vh;border:3px solid var(--ink);border-radius:16px;background:#000';
+      b.append(v); c.append(b);
+    }
+  }
+
+  /* ---------- Reivindicar (fluxo oficial: link privado do Instagram ou código) ---------- */
+  function reivindicar(c: HTMLElement, o: { gi?: number }) {
+    const box = el('div', 'cartao-b');
+    box.append(el('h2', '', 'reivindicar a casa'), el('p', '', 'digitar um @ nunca libera a casa. A prova é feita pelo Instagram oficial do jogo:'));
+    const ol = el('ol'); for (const t of ['quando você comenta a cidade num post de campanha, o jogo responde no privado com um link de uso único;', 'abra o link e confirme: a casa fica sua e libera avatar, frase e decoração;', 'se o link não chegar, gere um código aqui e mande do seu perfil num post de campanha ou no direct do jogo.']) ol.append(el('li', '', t));
+    box.append(ol);
+    const msg = el('p', 'msg');
+    box.append(botao('btn prim', 'gerar código de verificação', async () => {
+      const r = await api.desafio(o?.gi !== undefined ? dados.USR[o.gi] : '');
+      msg.className = 'msg ' + (r.ok ? 'ok' : 'erro');
+      msg.textContent = r.ok ? `seu código: ${r.codigo} · válido por ${Math.round(r.validadeMin)} min. Publique a partir da SUA conta; o código só vale neste navegador.` : r.erro || 'servidor de contas indisponível.';
+    }), msg);
+    c.append(box);
+  }
+
+  /* ---------- Ruas ---------- */
+  async function ruas(c: HTMLElement, o: { cid?: Cidade }) {
+    const cid = o?.cid || dados.CID[dados.CID_DE[Math.max(0, ctx.eu())]];
+    const box = el('div', 'cartao-b'); box.append(el('h2', '', `ruas de ${cid.nome}`)); const st = el('p', 'nota', 'carregando…'); box.append(st); c.append(box);
+    const r = await api.ruasDaCidade(cid.ibge); st.remove();
+    if (!r.ok) { box.append(el('p', 'msg erro', r.erro || 'servidor indisponível.')); return; }
+    if (!r.ruas.length) box.append(el('p', 'msg', 'nenhuma rua com morador reivindicado ainda. A primeira casa reivindicada abre a primeira rua pública.'));
+    for (const ru of r.ruas) { const l = el('div', 'linha'); l.append(el('span', '', `${ru.nome} · ${ru.status}`), el('b', '', `${ru.ocupadas}/${ru.capacidade}`)); box.append(l); }
+  }
+
+  return { abrir, fechar, fecharTopo: () => { if (aberto) { fechar(); return true; } return false; }, ativo: () => aberto };
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Seu Mundo Novo",
+  "short_name": "mundo",
+  "description": "O jogo do Brasil virtual: pega a sua casa na sua cidade, ganha pontos, vota a cada hora e vira prefeito, governador ou presidente.",
+  "lang": "pt-BR",
+  "start_url": "/?app=1",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#acdaf2",
+  "theme_color": "#FFD23F",
+  "icons": [
+    { "src": "/icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

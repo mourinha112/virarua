@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Seu Mundo Novo · o jogo do Brasil virtual · veja sua casa</title>
+  <meta name="description" content="Seu Mundo Novo é o jogo do Brasil virtual: pega a sua casa na sua cidade, ganha pontos, vota a cada hora e vira prefeito, governador ou presidente." />
+  <meta name="theme-color" content="#b3d1ee" />
+  <meta property="og:site_name" content="Seu Mundo Novo" />
+  <meta property="og:title" content="Seu Mundo Novo · o jogo do Brasil virtual" />
+  <meta property="og:description" content="Pega a sua casa na sua cidade, ganha pontos, vota a cada hora e vira prefeito, governador ou presidente." />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="mundo" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="stylesheet" href="/src/estilo.css" />
+  <style>html,body{margin:0;height:100%;background:#b3d1ee;overflow:hidden}#topo,#ctrl,#rodape,#tabbar,#cartao,#paineis,#toast{visibility:hidden}html.pronto #topo,html.pronto #ctrl,html.pronto #rodape,html.pronto #tabbar,html.pronto #cartao,html.pronto #paineis,html.pronto #toast{visibility:visible}#carrega{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font:900 20px Nunito,system-ui,sans-serif;color:#1e2430}</style>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icones/icone.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icones/icone-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Lilita+One&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="gl" role="img" aria-label="Mapa 3D do Brasil com as cidades e as casas de quem já entrou no jogo" tabindex="-1"></canvas>
+    <div id="camada" aria-hidden="true">
+      <div id="selring" hidden></div>
+      <div class="etq" id="etq" hidden><span class="etq-h" id="etqH"></span><span class="etq-c" id="etqC"></span></div>
+    </div>
+
+    <header id="topo">
+      <h1 class="sr-only">Seu Mundo Novo</h1>
+      <button id="ajuda" type="button" aria-label="como funciona: pontos, casas e cargos"><span aria-hidden="true">?</span></button>
+      <form id="form" role="search" autocomplete="off" novalidate>
+        <label class="campo" for="q">
+          <span class="at" aria-hidden="true">@</span>
+          <input id="q" name="busca" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="search" maxlength="60" placeholder="seu @ ou cidade" aria-label="Busca por @, cidade ou estado" />
+        </label>
+        <button id="ir" type="submit">achar</button>
+      </form>
+      <p class="dica1" id="dica1"></p>
+      <ul id="sug" role="listbox" hidden></ul>
+    </header>
+
+    <div id="ctrl" role="group" aria-label="Zoom do mapa">
+      <button id="zmais" type="button" aria-label="aproximar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+      <button id="zmenos" type="button" aria-label="afastar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+      <button id="zbr" type="button" aria-label="Brasil inteiro"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+
+    <section id="cartao" hidden aria-live="polite" aria-label="Detalhes"></section>
+
+    <footer id="rodape">
+      <p class="totais" id="totais" role="status"></p>
+      <button class="negbtn" id="abrirNegocio" type="button" aria-label="colocar meu negócio no mapa">seu negócio no mapa</button>
+      <p class="rod-links"><a class="priv" href="/privacidade.html">privacidade</a><span aria-hidden="true">·</span><a id="segRodape" href="#" target="_blank" rel="noopener">seguir no Instagram</a></p>
+    </footer>
+
+    <nav id="tabbar" aria-label="navegação principal"></nav>
+
+    <div id="paineis"></div>
+    <div id="toast" role="status" hidden></div>
+    <div id="carrega" role="status"><div class="spin"></div><p class="out">montando o mapa…</p></div>
+    <noscript><div id="semjs">esse mapa precisa de JavaScript ligado</div></noscript>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "seumundonovo-video-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Estúdio de vídeo SEPARADO do jogo: templates HTML 1080x1920 → frames (Chrome) → MP4 (ffmpeg). Publicação padrão: dry-run.",
+  "scripts": {
+    "contrato": "node scripts/sincronizar-contrato.mjs",
+    "capturas": "tsx scripts/capturar-jogo.ts",
+    "placeholders": "tsx scripts/placeholders.ts",
+    "render": "tsx scripts/render.ts",
+    "demo": "tsx scripts/demo.ts",
+    "folhas": "tsx scripts/folhas.ts",
+    "worker": "tsx scheduler/worker.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "playwright-core": "1.64.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.7"
+  },
+  "engines": { "node": ">=22" }
+}

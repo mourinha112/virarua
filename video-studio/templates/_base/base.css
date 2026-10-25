@@ -1,0 +1,43 @@
+/* Identidade do jogo (src/estilo.css): traço grosso tinta, amarelo, pílulas, sombra dura. 1080×1920, margens seguras
+   para a interface do Reels: topo 250 px, base 430 px, esquerda 80 px, direita 160 px (coluna de botões). */
+:root {
+  --ink: #1e2430; --amarelo: #ffd23f; --amarelo2: #ffc100; --branco: #fff; --papel: #fff8e1; --gelo: #eef3f8;
+  --verde: #78ad54; --verde2: #4f9c3f; --azul: #4fb7f0; --azul2: #3a86ff; --vermelho: #e63946; --laranja: #ff8a1f; --roxo: #8338ec; --ceu: #b3d1ee;
+  --fonte: 'Nunito', system-ui, 'Segoe UI', sans-serif; --fonte-titulo: 'Lilita One', 'Nunito', system-ui, sans-serif;
+  --safe-t: 250px; --safe-b: 430px; --safe-l: 80px; --safe-r: 160px;
+}
+* { box-sizing: border-box; animation: none !important; transition: none !important; }
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: var(--ink); }
+body { font-family: var(--fonte); font-weight: 800; color: var(--ink); -webkit-font-smoothing: antialiased; }
+#palco { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--ceu); }
+.camada { position: absolute; inset: 0; }
+.fundo { position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: cover; transform-origin: 50% 45%; }
+.vinheta { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(30,36,48,.55) 0%, rgba(30,36,48,0) 22%, rgba(30,36,48,0) 62%, rgba(30,36,48,.6) 100%); }
+/* área segura: tudo que precisa ser lido mora aqui */
+.seguro { position: absolute; top: var(--safe-t); bottom: var(--safe-b); left: var(--safe-l); right: var(--safe-r); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.bloco { position: absolute; left: var(--safe-l); right: var(--safe-r); display: flex; flex-direction: column; align-items: center; transform-origin: 50% 50%; }
+/* legendas grandes */
+.gancho { font-family: var(--fonte-titulo); font-weight: 400; font-size: 88px; line-height: 1.02; text-align: center; color: var(--ink); background: var(--amarelo);
+  border: 6px solid var(--ink); border-radius: 36px; box-shadow: 0 10px 0 var(--ink); padding: 34px 40px 40px; max-width: 840px; }
+.legenda { font-size: 58px; font-weight: 900; line-height: 1.12; text-align: center; background: var(--branco); border: 5px solid var(--ink); border-radius: 30px;
+  box-shadow: 0 8px 0 var(--ink); padding: 26px 34px 30px; max-width: 840px; }
+.cta { font-family: var(--fonte-titulo); font-size: 70px; line-height: 1.05; text-align: center; background: var(--amarelo); border: 6px solid var(--ink);
+  border-radius: 999px; box-shadow: 0 10px 0 var(--ink); padding: 34px 54px 40px; max-width: 840px; }
+.marca { font-family: var(--fonte-titulo); font-size: 54px; color: var(--branco); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); }
+/* selos obrigatórios */
+.selos { position: absolute; top: 150px; left: var(--safe-l); right: var(--safe-r); display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+.selo { font-size: 30px; font-weight: 900; background: var(--branco); border: 4px solid var(--ink); border-radius: 999px; padding: 8px 22px 10px; box-shadow: 0 4px 0 var(--ink); white-space: nowrap; }
+.selo.virtual { background: var(--gelo); }
+.selo.patrocinado { background: var(--amarelo); }
+.selo.demo { background: var(--vermelho); color: var(--branco); }
+.carimbo-demo { position: absolute; left: 0; right: 0; bottom: 330px; text-align: center; font-size: 30px; font-weight: 900; color: var(--branco); }
+.carimbo-demo span { background: rgba(230,57,70,.92); border: 4px solid var(--ink); border-radius: 999px; padding: 8px 24px 10px; }
+.data { position: absolute; left: 0; right: 0; bottom: 392px; text-align: center; font-size: 26px; font-weight: 800; color: var(--branco); text-shadow: 0 2px 0 var(--ink), 0 0 6px var(--ink); }
+/* componentes */
+.cartao { background: var(--branco); border: 5px solid var(--ink); border-radius: 34px; box-shadow: 0 8px 0 var(--ink); padding: 30px 36px; }
+.numero { font-family: var(--fonte-titulo); font-size: 220px; line-height: .95; color: var(--ink); }
+.rotulo { font-size: 44px; font-weight: 900; text-align: center; }
+.pilula { display: inline-block; font-size: 36px; font-weight: 900; border: 4px solid var(--ink); border-radius: 999px; padding: 8px 24px 10px; background: var(--papel); box-shadow: 0 4px 0 var(--ink); }
+.barra { width: 760px; height: 70px; border: 5px solid var(--ink); border-radius: 999px; background: var(--gelo); overflow: hidden; box-shadow: 0 6px 0 var(--ink); }
+.barra > i { display: block; height: 100%; background: var(--amarelo); border-right: 5px solid var(--ink); }
+.placeholder-aviso { position: absolute; left: 0; right: 0; top: 50%; text-align: center; font-size: 28px; font-weight: 900; color: var(--branco); }

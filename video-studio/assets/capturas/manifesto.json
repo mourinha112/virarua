@@ -1,0 +1,101 @@
+{
+  "brasil": {
+    "arquivo": "assets/capturas/brasil.png",
+    "descricao": "mapa do Brasil inteiro",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:32:10.971Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "cidade-sp": {
+    "arquivo": "assets/capturas/cidade-sp.png",
+    "descricao": "São Paulo de cima",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:32:23.307Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "cidade-rj": {
+    "arquivo": "assets/capturas/cidade-rj.png",
+    "descricao": "Rio de Janeiro de cima",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:32:36.019Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "cidade-vitoria": {
+    "arquivo": "assets/capturas/cidade-vitoria.png",
+    "descricao": "Vitória/ES aproximada",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:32:48.336Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "rua-perto": {
+    "arquivo": "assets/capturas/rua-perto.png",
+    "descricao": "casas de uma rua bem perto",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:33:00.661Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "casa-perto": {
+    "arquivo": "assets/capturas/casa-perto.png",
+    "descricao": "uma casa em destaque (sem cartão nem @)",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:33:13.185Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "loja-pet": {
+    "arquivo": "assets/capturas/loja-pet.png",
+    "descricao": "estabelecimento 3D",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:33:25.368Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "cidade-noite": {
+    "arquivo": "assets/capturas/cidade-noite.png",
+    "descricao": "São Paulo à noite",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=20",
+    "capturado_em": "2026-10-24T22:33:37.664Z",
+    "placeholder": false,
+    "contem_perfis": false,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  },
+  "jogo-ui": {
+    "arquivo": "assets/capturas/jogo-ui.png",
+    "descricao": "jogo com a interface (celular); mostra @ fictícios do pacote DEMO",
+    "origem": "captura do jogo real (engine Three.js do repositório)",
+    "url": "http://localhost:5173/?hora=12",
+    "capturado_em": "2026-10-24T22:33:49.814Z",
+    "placeholder": false,
+    "contem_perfis": true,
+    "dados": "pacote public/dados/mundo.json (DEMO: moradores fictícios)",
+    "erros": []
+  }
+}

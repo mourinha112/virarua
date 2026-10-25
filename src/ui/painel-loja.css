@@ -1,0 +1,32 @@
+/* Painel do estabelecimento (src/ui/painel-loja.ts) — mesmo traço do jogo: borda grossa, sombra dura, pílulas. */
+.pl-carrega { display: flex; align-items: center; gap: 10px; }
+.pl-fachada { --pl-cor: #ffd23f; }
+.pl-predio { position: relative; height: 150px; margin: -2px -4px 10px; border: var(--borda) solid var(--ink); border-radius: 14px; background: #f4f1e8; overflow: hidden; }
+.pl-placa { position: absolute; left: 8%; right: 8%; top: 10px; height: 36px; display: flex; align-items: center; justify-content: center; background: #fff; border: var(--borda) solid var(--ink); border-radius: 10px; color: var(--pl-cor); font-family: var(--fonte-titulo); font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; }
+.pl-toldo { position: absolute; left: 4%; right: 4%; top: 56px; height: 26px; display: flex; border: var(--borda) solid var(--ink); border-radius: 0 0 12px 12px; overflow: hidden; }
+.pl-toldo i { flex: 1; background: var(--pl-cor); }
+.pl-toldo i:nth-child(even) { background: #fff; }
+.pl-vitrine { position: absolute; left: 10%; right: 10%; bottom: 0; height: 52px; background: #7fa8cc; border: var(--borda) solid var(--ink); border-bottom: 0; border-radius: 8px 8px 0 0; }
+.pl-porta { position: absolute; right: 12%; bottom: 0; width: 22%; height: 46px; background: #3f5670; border: 2px solid var(--ink); border-bottom: 0; border-radius: 6px 6px 0 0; }
+.pl-selo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+.pl-ic svg { width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 2; vertical-align: middle; }
+.pl-nome { margin-top: 8px !important; }
+.pl-mesas { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; margin: 6px 0; }
+.pl-mesa { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; background: #fff; border: 2px solid var(--ink); border-radius: 14px; box-shadow: var(--sombra-p); }
+.pl-tampo { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #c98a4b; border: 2px solid var(--ink); color: #fff; font-weight: 900; }
+.pl-lugares { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 70px; }
+.pl-lugares i { width: 12px; height: 12px; border-radius: 4px; background: var(--amarelo); border: 2px solid var(--ink); }
+.pl-dados { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 4px 0 10px; font-size: 14px; }
+.pl-dados dt { color: var(--cinza); }
+.pl-dados dd { margin: 0; overflow-wrap: anywhere; }
+.pl-link { flex-direction: column; gap: 0; text-decoration: none; margin-top: 8px; }
+.pl-link small { font-size: 12px; font-weight: 800; color: #4a5568; }
+.pl-cupom { background: #fff; border: 2px dashed var(--ink); border-radius: 14px; padding: 10px 12px; margin: 8px 0; display: flex; flex-direction: column; gap: 4px; }
+.pl-cupom small { font-size: 12px; color: #4a5568; }
+.pl-cupom-acao { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.pl-codigo { font: 900 16px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 1px; background: var(--papel); border: 2px solid var(--ink); border-radius: 8px; padding: 6px 10px; }
+.pl-evento { border-top: 2px solid var(--cinza2); padding: 8px 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.pl-evento:first-of-type { border-top: 0; }
+.pl-evento small { color: #4a5568; font-size: 12px; }
+.pl-evento p { margin: 0; font-size: 14px; }
+.pl-rodape { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin: 12px auto; }

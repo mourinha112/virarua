@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- o link de uso único chega com ?t=: nada de referrer, nada de terceiros, nada indexado -->
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" />
+  <meta name="theme-color" content="#b3d1ee" />
+  <title>Reivindicar casa · Seu Mundo Novo</title>
+  <link rel="icon" href="/icones/icone.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/estilo.css" />
+  <style>
+    body { overflow: auto; touch-action: auto; overscroll-behavior: auto; min-height: 100%; background: linear-gradient(180deg, #bcd8f2 0%, #d9ead6 60%, #9ad3f0 100%); }
+    #reiv { max-width: 520px; margin: 0 auto; padding: calc(16px + var(--safe-t)) 16px calc(32px + var(--safe-b)); }
+    #reiv h1 { text-align: center; font-size: 34px; margin: 8px 0 4px; }
+    #reiv .linha { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 2px dashed var(--cinza2); }
+    #reiv .linha:last-child { border-bottom: 0; }
+    #reiv .codigo { font: 900 26px/1.2 ui-monospace, Consolas, monospace; letter-spacing: 1px; text-align: center; background: var(--papel); border: var(--borda) solid var(--ink); border-radius: 14px; padding: 12px; margin: 10px 0; user-select: all; }
+    #reiv .aceite { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; font-weight: 800; }
+    #reiv .aceite input { width: 22px; height: 22px; flex: none; margin-top: 2px; }
+    #reiv .acoes { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    #reiv .centro { text-align: center; }
+  </style>
+</head>
+<body>
+  <main id="reiv" aria-live="polite">
+    <h1 class="out amarelo">Seu Mundo Novo</h1>
+    <noscript><div class="cartao-b"><p>Ative o JavaScript para confirmar sua casa.</p></div></noscript>
+    <div id="conteudo"><div class="cartao-b centro"><div class="spin" style="margin:8px auto"></div><p>carregando…</p></div></div>
+    <p class="nota centro"><a href="/privacidade.html">privacidade</a> · <a href="/">voltar ao mapa</a></p>
+  </main>
+  <script type="module" src="/src/ui/reivindicar.ts"></script>
+</body>
+</html>
