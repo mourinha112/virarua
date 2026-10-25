@@ -1,6 +1,7 @@
 import { criarMundo } from './mundo/mundo';
 import { iniciarApp } from './ui/app';
 import { iniciarPresenca } from './api/social';
+import { ativarFilme } from './filme';
 
 const canvas = document.getElementById('gl') as HTMLCanvasElement;
 const mundo = criarMundo(canvas);
@@ -13,4 +14,7 @@ document.getElementById('zbr')!.onclick = () => { (window as any).ctx?.fecharCar
 
 const carrega = document.getElementById('carrega')!;
 document.documentElement.classList.add('pronto');
-iniciarApp(mundo).then(() => { try { iniciarPresenca(); } catch { /* sem sessão: tudo bem */ } }).finally(() => { carrega.classList.add('some'); setTimeout(() => carrega.remove(), 500); });
+const app = iniciarApp(mundo);
+// ?filme: placa de vídeo determinística para o video-studio (sem HUD, sem presença)
+if (new URLSearchParams(location.search).has('filme')) { ativarFilme(mundo, app); carrega.remove(); }
+else app.then(() => { try { iniciarPresenca(); } catch { /* sem sessão: tudo bem */ } }).finally(() => { carrega.classList.add('some'); setTimeout(() => carrega.remove(), 500); });

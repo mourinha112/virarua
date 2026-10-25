@@ -189,6 +189,7 @@ export function criarCidades3D(scene: T.Scene, dados: Dados, camera: Camera, opt
     const L = construirCidade(c.ibge, cx, cy, c.n, bloq, sig + '@' + cx.toFixed(1) + ',' + cy.toFixed(1)); memo.set(c.ibge, L); return L;
   }
 
+  let fixa = false;
   function escolher(): Cidade[] {
     const d = camera.dist; if (d > 420) return [];
     const fx = camera.st.fx, fy = camera.st.fy, raio = Math.max(40, d * 1.7);
@@ -336,11 +337,11 @@ export function criarCidades3D(scene: T.Scene, dados: Dados, camera: Camera, opt
       avatares.raiz.visible = d < 120; avatares.passo(agora);
       for (const g of trofeus.children) g.rotation.y = agora * 0.8;
       for (const g of empG.values()) { const m = g.children.find((x) => x.userData.anima === 'gira'); if (m) { m.rotation.y = agora; m.rotation.x = agora * 0.6; } }
-      if (avIds.length && Math.random() < 0.02) avatares.animar(avIds[Math.floor(Math.random() * avIds.length)], Math.random() < 0.5 ? 'aceno' : 'comemorar'); halos.visible = NOITE.value > 0.05; haloMat.uniforms.uEsc.value = innerHeight * 0.9;
+      if (!fixa && avIds.length && Math.random() < 0.02) avatares.animar(avIds[Math.floor(Math.random() * avIds.length)], Math.random() < 0.5 ? 'aceno' : 'comemorar'); halos.visible = NOITE.value > 0.05; haloMat.uniforms.uEsc.value = innerHeight * 0.9;
       const sombra = d < 120;
       for (const k of Object.keys(G)) if (k[0] === 'p' || k[0] === 't' || k === 'arv' || k === 'igreja' || k === 'flor' || k === 'palma') G[k].castShadow = sombra;
       for (const g of lojasG.values()) { const m = g.children.find((x) => x.userData.anima === 'flutua'); if (m) m.position.y = 1.13 + Math.sin(agora * 2) * 0.05; }
-      if (agora - ultimaTroca < 0.35 || (camera.voo && d > 300)) return;
+      if (fixa || agora - ultimaTroca < 0.35 || (camera.voo && d > 300)) return;
       const lista = escolher(); const sig = lista.map((c) => c.ibge).join(',');
       if (sig !== assinatura) { assinatura = sig; ultimaTroca = agora; reconstruir(lista); }
     },
@@ -355,6 +356,9 @@ export function criarCidades3D(scene: T.Scene, dados: Dados, camera: Camera, opt
     posicaoAvatar(id: string) { if (id === 'eu' && meu) { const p = this.posicaoLote(meu.ibge, meu.lote); return p; } const v = vizinhos.find((x) => x.id === id); return v ? this.posicaoLote(v.ibge, v.lote) : null; },
     posicaoLote(ibge: number, lote: number) { const c = dados.POR_IBGE.get(ibge); if (!c) return null; const L = layoutDe(c); const lo = L.lotes[lote]; return lo ? { x: lo.x, y: lo.y } : { x: L.cx, y: L.cy }; },
     acenarEu() { avatares.animar('eu', 'aceno'); },
+    /** modo filme: congela as cidades construídas (a lista não muda com a câmera) */
+    fixar(lista: Cidade[] | null) { fixa = !!lista; if (lista) { assinatura = lista.map((x) => x.ibge).join(','); reconstruir(lista); } },
+    vizinhasDe(c: Cidade, n: number) { return [c, ...dados.CID.filter((x) => x !== c).map((x) => ({ x, d: Math.hypot(x.x - c.x, x.y - c.y) })).filter((o) => o.d < 120).sort((a, b) => a.d - b.d).slice(0, n - 1).map((o) => o.x)]; },
     forcar(c: Cidade) { if (!visiveis.includes(c)) { const l = [c, ...visiveis.filter((x) => x !== c)].slice(0, opts.maxCidades); assinatura = l.map((x) => x.ibge).join(','); reconstruir(l); } },
     posicaoCasa(gi: number): { x: number; y: number } | null {
       const ci = dados.CID_DE[gi]; if (ci < 0) return null; const c = dados.CID[ci];

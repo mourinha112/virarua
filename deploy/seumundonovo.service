@@ -1,0 +1,18 @@
+# /etc/systemd/system/seumundonovo.service
+# API + worker da fila. Reinicia sozinho se cair e sobe junto com o servidor.
+[Unit]
+Description=Seu Mundo Novo (API + worker)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=smn
+WorkingDirectory=/srv/seumundonovo/app
+EnvironmentFile=/srv/seumundonovo/.env
+ExecStart=/usr/bin/npx tsx server/src/index.ts
+Restart=always
+RestartSec=5
+MemoryMax=700M
+
+[Install]
+WantedBy=multi-user.target

@@ -21,9 +21,9 @@ function texPuff() {
 export function criarNuvens(scene: T.Scene, uCl: { value: T.Vector4[] }, n = 8) {
   const tex = texPuff();
   const r = rng(20261014), ALT = 380, ENV = 5600;
-  const nuvens: { x: number; z: number; v: number; puffs: { s: T.Sprite; ox: number; oz: number; r: number }[] }[] = [];
+  const nuvens: { x: number; x0: number; z: number; v: number; puffs: { s: T.Sprite; ox: number; oz: number; r: number }[] }[] = [];
   for (let i = 0; i < n; i++) {
-    const nu = { x: (r() - 0.5) * 5200, z: (r() - 0.5) * 5200, v: 3.2 + 2.4 * r(), puffs: [] as any[] };
+    const x0 = (r() - 0.5) * 5200; const nu = { x: x0, x0, z: (r() - 0.5) * 5200, v: 3.2 + 2.4 * r(), puffs: [] as any[] };
     for (let j = 0; j < 3; j++) {
       const rad = 70 + 70 * r();
       const s = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, opacity: 0.85, depthWrite: false, fog: false }));
@@ -34,6 +34,11 @@ export function criarNuvens(scene: T.Scene, uCl: { value: T.Vector4[] }, n = 8) 
   }
   const sombra = new T.Vector2(-SUN_DIR.x / SUN_DIR.y * ALT, -SUN_DIR.z / SUN_DIR.y * ALT);
   return {
+    /** posição em função do tempo absoluto (modo filme): sem acumular dt */
+    em(t: number, hCam: number) {
+      for (const nu of nuvens) nu.x = ((((nu.x0 + nu.v * t) + ENV / 2) % ENV) + ENV) % ENV - ENV / 2;
+      this.passo(0, hCam);
+    },
     passo(dt: number, hCam: number) {
       const vis = hCam > 450;
       let k = 0;

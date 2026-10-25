@@ -459,3 +459,6 @@ body.achou .jornal-fab { display: none; }
 .jn-mat p { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #3a404c; }
 .jn-chapeu { display: inline-block; background: var(--ink); color: var(--amarelo); border-radius: 4px; padding: 1px 8px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; }
 @media (max-width: 640px) { .jornal-fab { bottom: calc(var(--tab-h) + 128px + var(--safe-b)); } }
+
+/* modo filme (?filme): só o mundo 3D, nenhuma interface por cima */
+html.filme body > *:not(#app), html.filme #app > *:not(#gl) { display: none !important; }

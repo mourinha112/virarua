@@ -180,23 +180,27 @@ export function criarMundo(canvas: HTMLCanvasElement) {
   const passos: ((dt: number, t: number) => void)[] = [];
   let ultimo = performance.now() / 1000, rodando = true, t0 = ultimo;
   const gov = { n: 0, acc: 0 };
-  function laco() {
-    if (!rodando) return;
-    requestAnimationFrame(laco);
-    const agora = performance.now() / 1000, dtReal = agora - ultimo, dt = Math.min(0.05, dtReal); ultimo = agora;
-    TIME.value = agora - t0;
-    if ((gov.n & 31) === 0) aplicarNoite(fatorNoite());
-    camera.passo(dtReal);
+  /** um quadro do mundo; `filme` = tempo fixo (seek determinístico), sem mola nem governador */
+  function quadro(dt: number, tSeg: number, dtCam: number, filme = false) {
+    TIME.value = tSeg;
+    if (filme || (gov.n & 31) === 0) aplicarNoite(fatorNoite());
+    if (filme) camera.aplicar(0); else camera.passo(dtCam);
     { const f = scene.fog as T.Fog; const dd = camera.dist; f.near = dd * 2.2 + 120; f.far = dd * 7 + 3500; }
-    { const h = camera.cam.position.y; chao.uni.uTint.value = 0.95 * sstep(120, 3000, h); chao.uni.uBioK.value = 0.25 + 0.57 * sstep(250, 2500, h); chao.uni.uTimeG.value = TIME.value; UPX.value = (2 * Math.tan((camera.cam.fov * Math.PI) / 360)) / Math.max(1, VIEW.h); arvores.passo(h); nuvens.passo(dt, h); }
+    { const h = camera.cam.position.y; chao.uni.uTint.value = 0.95 * sstep(120, 3000, h); chao.uni.uBioK.value = 0.25 + 0.57 * sstep(250, 2500, h); chao.uni.uTimeG.value = TIME.value; UPX.value = (2 * Math.tan((camera.cam.fov * Math.PI) / 360)) / Math.max(1, VIEW.h); arvores.passo(h); if (filme) nuvens.em(tSeg, h); else nuvens.passo(dt, h); }
     sky.position.copy(camera.cam.position); sky.scale.setScalar(camera.cam.far * 0.9);
     marMat.uniforms.camPos.value.copy(camera.cam.position);
     // sol acompanha o foco (sombras só perto)
     const d = Math.min(camera.dist, 400);
     sun.target.position.set(camera.st.fx, 0, -camera.st.fy); sun.position.copy(sun.target.position).add(new T.Vector3(-0.62, 0.7, -0.36).multiplyScalar(d * 3));
     const sc = sun.shadow.camera as T.OrthographicCamera; const ext = d * 1.4; sc.left = -ext; sc.right = ext; sc.top = ext; sc.bottom = -ext; sc.near = 1; sc.far = d * 10; sc.updateProjectionMatrix();
-    for (const f of passos) f(dt, agora - t0);
+    for (const f of passos) f(dt, tSeg);
     renderer.render(scene, camera.cam);
+  }
+  function laco() {
+    if (!rodando) return;
+    requestAnimationFrame(laco);
+    const agora = performance.now() / 1000, dtReal = agora - ultimo, dt = Math.min(0.05, dtReal); ultimo = agora;
+    quadro(dt, agora - t0, dtReal);
     // governador simples: muitos quadros lentos → baixa o nível
     gov.n++; gov.acc += dt; if (gov.acc > 3) { const fps = gov.n / gov.acc; gov.n = 0; gov.acc = 0; if (fps < 28 && Q.nivel > 0) { Q.nivel--; aplicarDpr(); renderer.shadowMap.enabled = Q.nivel > 0; sun.castShadow = Q.nivel > 0; } }
   }
@@ -207,6 +211,11 @@ export function criarMundo(canvas: HTMLCanvasElement) {
     aoClicar: (f: (x: number, y: number) => void) => aoClicar.push(f),
     aoPasso: (f: (dt: number, t: number) => void) => passos.push(f),
     parar: () => { rodando = false; },
+    /** modo filme: para o laço e desenha o estado de câmera `st` no instante `t` (s); mesma entrada, mesmo quadro */
+    filmar(st: { fx: number; fy: number; ld: number; phi: number; psi: number }, t: number, fps = 30) {
+      rodando = false; Object.assign(camera.st, st); Object.assign(camera.alvo, st); camera.voo = false;
+      quadro(1 / fps, t, 0, true);
+    },
     dimensionar,
     terreno: TERRENO,
     mata, arvores,
