@@ -15,6 +15,15 @@ export type ResultadoProvisao =
 export async function garantirIdentidade(c: Tx, a: { provedor?: string; escopo: string; externalId: string; username?: string | null; eventoEm?: Date | null }) {
   const provedor = a.provedor || 'instagram';
   const quando = a.eventoEm || new Date();
+  // casa criada à mão pelo operador (CLI "casa", escopo 'manual'): o 1º contato real do mesmo @ pelo Instagram oficial
+  // assume essa identidade (casa, rua e conta continuam as mesmas). O @ vem do webhook assinado da Meta, não de digitação.
+  if (provedor === 'instagram' && a.escopo !== 'manual' && a.username) {
+    await c.query(
+      `update external_identities m set escopo = $1, external_id = $2, username_atualizado_em = $4
+        where m.id = (select id from external_identities where provedor = 'instagram' and escopo = 'manual' and lower(username) = lower($3) and revogado_em is null order by criado_em limit 1)
+          and not exists (select 1 from external_identities r where r.provedor = 'instagram' and r.escopo = $1 and r.external_id = $2)`,
+      [a.escopo, a.externalId, a.username, quando]);
+  }
   await c.query(
     `insert into external_identities (provedor, escopo, external_id, username, username_atualizado_em) values ($1, $2, $3, $4, $5)
      on conflict (provedor, escopo, external_id) do nothing`, [provedor, a.escopo, a.externalId, a.username || null, a.username ? quando : null]);
