@@ -9,13 +9,37 @@
 import type { App } from '../../http/app';
 import { ErroHttp, limite } from '../../http/app';
 import { config } from '../../config';
-import { q1, tx } from '../../db/db';
+import { q, q1, tx } from '../../db/db';
+import { obterToken } from './provedor';
 import { iguais, sha256, tokenForte } from '../../seguranca/cripto';
 import { resolverCidade } from '../cidades/resolver';
 import { provisionar } from '../mundo/provisionar';
 
 const chave = () => process.env.PONTE_MANYCHAT_CHAVE || '';
 const url = () => config.urlPublica.replace(/\/+$/, '');
+
+/** texto do comentário mais recente do @ nos posts de campanha ativos (Graph API), ou null */
+async function ultimoComentarioDe(handle: string): Promise<string | null> {
+  const conta = config.instagram.contaId; if (!conta) return null;
+  const token = await obterToken(conta).catch(() => null); if (!token) return null;
+  const midias = await q<{ media_id: string }>(`select media_id from enabled_media where conta_id = $1 and status = 'ativa' order by criado_em desc limit 5`, [conta]);
+  let melhor: { t: number; texto: string } | null = null;
+  for (const m of midias) {
+    let url: string | null = `https://graph.instagram.com/${config.instagram.graphVersao}/${encodeURIComponent(m.media_id)}/comments?fields=text,username,timestamp&limit=50&access_token=${encodeURIComponent(token)}`;
+    for (let pag = 0; url && pag < 4; pag++) {
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+      const j: any = r ? await r.json().catch(() => null) : null;
+      if (!j || j.error) break;
+      for (const cm of j.data || []) {
+        if (String(cm.username || '').toLowerCase() !== handle) continue;
+        const t = Date.parse(cm.timestamp || '') || 0;
+        if (!melhor || t > melhor.t) melhor = { t, texto: String(cm.text || '') };
+      }
+      url = j.paging?.next || null;
+    }
+  }
+  return melhor?.texto || null;
+}
 
 export function registrarPonteManychat(app: App) {
   app.post('/api/ponte/manychat', limite(120), async (c) => {
@@ -26,14 +50,21 @@ export function registrarPonteManychat(app: App) {
     // aceita o corpo simples {username, texto} ou o "Full Contact Data" do ManyChat (ig_username + custom_fields.cidade)
     const cf = b.custom_fields && typeof b.custom_fields === 'object' ? b.custom_fields : {};
     const handle = String(b.username || b.ig_username || '').replace(/^@/, '').trim().toLowerCase();
-    const texto = String(b.texto || b.comentario || b.text || cf.cidade || cf.Cidade || b.last_input_text || '').slice(0, 300);
     if (!/^[a-z0-9._]{1,30}$/.test(handle)) throw new ErroHttp(400, 'username inválido');
+    // ?origem=comentario: o ManyChat não manda o texto do comentário, então lemos o último comentário desse @
+    // nos posts de campanha direto da Graph API (posts da própria conta: liberado sem a análise da Meta)
+    const origem = c.req.query('origem') || '';
+    let texto = origem === 'comentario' ? (await ultimoComentarioDe(handle)) || '' : '';
+    if (!texto) texto = String(b.texto || b.comentario || b.text || cf.cidade || cf.Cidade || b.last_input_text || '');
+    texto = texto.slice(0, 300);
 
     const res = await resolverCidade(texto);
     if (res.tipo !== 'ok') {
       const mensagem = res.tipo === 'ambigua'
         ? `Tem mais de uma cidade com esse nome 😅 (${res.candidatos.slice(0, 4).map((x) => `${x.nome} - ${x.uf}`).join(', ')}). Me manda com o estado, assim: ${res.candidatos[0].nome} - ${res.candidatos[0].uf}`
-        : 'Não achei essa cidade 😅 Me manda de novo com o estado, assim: Duque de Caxias - RJ';
+        : origem === 'comentario'
+          ? 'Oi! 🏠 Me responde aqui com tua cidade e estado que tua casa nasce no mapa do Brasil virtual. Ex.: Duque de Caxias - RJ'
+          : 'Não achei essa cidade 😅 Me manda de novo com o estado, assim: Duque de Caxias - RJ';
       return c.json({ ok: true, resultado: 'cidade_nao_achada', cidade: '', link: '', mensagem });
     }
 
