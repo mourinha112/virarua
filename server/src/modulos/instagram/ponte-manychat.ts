@@ -22,7 +22,12 @@ const url = () => config.urlPublica.replace(/\/+$/, '');
 async function ultimoComentarioDe(handle: string): Promise<string | null> {
   const conta = config.instagram.contaId; if (!conta) return null;
   const token = await obterToken(conta).catch(() => null); if (!token) return null;
-  const midias = await q<{ media_id: string }>(`select media_id from enabled_media where conta_id = $1 and status = 'ativa' order by criado_em desc limit 5`, [conta]);
+  // posts mais recentes da conta (não depende de habilitar cada post no painel) + os habilitados no painel
+  const rec: any = await fetch(`https://graph.instagram.com/${config.instagram.graphVersao}/me/media?fields=id&limit=5&access_token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(8000) })
+    .then((r) => r.json()).catch(() => null);
+  const hab = await q<{ media_id: string }>(`select media_id from enabled_media where conta_id = $1 and status = 'ativa' order by criado_em desc limit 5`, [conta]);
+  const ids = [...new Set([...((rec?.data || []) as { id: string }[]).map((x) => String(x.id)), ...hab.map((h) => h.media_id)])];
+  const midias = ids.map((media_id) => ({ media_id }));
   let melhor: { t: number; texto: string } | null = null;
   for (const m of midias) {
     let url: string | null = `https://graph.instagram.com/${config.instagram.graphVersao}/${encodeURIComponent(m.media_id)}/comments?fields=text,username,timestamp&limit=50&access_token=${encodeURIComponent(token)}`;
