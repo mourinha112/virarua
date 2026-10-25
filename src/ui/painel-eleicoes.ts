@@ -24,6 +24,7 @@ export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx, abaInicial?
   const selo = el('span', 'etiq am', SELO); topo.append(selo);
   const cont = el('p', 'contagem'); topo.append(cont);
   corpo.append(topo);
+  const guia = el('div', 'cartao-b'); corpo.append(guia);
 
   const cal = el('div', 'cartao-b'); cal.append(el('h2', '', 'calendário da semana'), el('p', 'nota', 'carregando…'));
   corpo.append(cal);
@@ -43,6 +44,7 @@ export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx, abaInicial?
     // sem aba pedida: abre na primeira com algo pra fazer (votar ou se candidatar)
     if (!abaInicial) { const alvo = lista.find((e) => (e.status === 'votacao' && !e.meuVoto) || (e.status === 'inscricoes' && !e.minhaCandidatura)); if (alvo) aba = alvo.cargo; }
     if (rc.ok && rc.meuCargo) desenharMeuCargo();
+    desenharGuia(rc.ok ? rc.fase : '');
     pintar();
   }
 
@@ -68,8 +70,52 @@ export function montarPainelEleicoes(corpo: HTMLElement, _ctx?: Ctx, abaInicial?
     cal.append(mand);
   }
 
+  const irPara = (cargo: CargoId) => { aba = cargo; pintar(); caixa.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  /** guia no topo: no dia de votar, um botão por cargo; sempre, o passo a passo de como se candidatar */
+  function desenharGuia(fase: string) {
+    guia.innerHTML = ''; guia.className = 'cartao-b';
+    const votando = lista.filter((e) => e.status === 'votacao');
+    if (votando.length) {
+      guia.className = 'cartao-b am';
+      guia.append(el('h2', '', '🗳️ hoje é dia de votar'), el('p', '', 'escolha o cargo e toque no nome de quem você quer. Dá pra trocar o voto até fechar.'));
+      const bts = el('div', 'hub-bts');
+      for (const a of ABAS) {
+        const e = votando.find((x) => x.cargo === a.id); if (!e) continue;
+        bts.append(botao(e.meuVoto && !e.meuVoto.invalido ? 'btn' : 'btn prim', `${e.meuVoto && !e.meuVoto.invalido ? '✅' : '🗳️'} ${e.cargoNome} · ${a.rot}${e.meuVoto && !e.meuVoto.invalido ? ' (já votei)' : ''}`, () => irPara(a.id)));
+      }
+      guia.append(bts);
+      if (publico) guia.append(el('p', 'nota', 'para votar, confirme a sua casa primeiro.'));
+    }
+    const det = el('details', 'hub-como'); det.open = !votando.length;
+    det.append(el('summary', '', '✋ como me candidatar?'));
+    const passos: [string, string][] = [
+      ['🏠', 'confirme a sua casa (link do direct ou código de verificação)'],
+      ['📅', 'inscrições de segunda a quinta; votação de sexta a domingo; resultado domingo 21h'],
+      ['👆', 'escolha a aba do cargo: rua (líder), cidade (prefeito) ou Brasil (presidente)'],
+      ['📣', 'toque em "quero me candidatar" e confirme. Vale um cargo por semana'],
+      ['🤝', 'para presidente, outros moradores precisam te apoiar antes da votação'],
+      ['📲', 'peça votos: mande o link do jogo pros vizinhos da sua rua e da sua cidade'],
+    ];
+    for (const [ic, t] of passos) { const l = el('div', 'expl-p'); l.append(el('span', 'expl-ic', ic), el('span', '', t)); det.append(l); }
+    const alvo = lista.find((e) => e.status === 'inscricoes' && e.turno === 1 && !e.minhaCandidatura);
+    const minha = lista.find((e) => e.minhaCandidatura?.estado === 'inscrito');
+    if (publico) { if (entrar) det.append(botao('btn prim bloco', 'confirmar minha casa', entrar)); }
+    else if (minha) det.append(el('p', 'msg ok', `você é candidato a ${minha.cargoNome} (${minha.escopoNome}). Agora é pedir votos!`));
+    else if (alvo) det.append(botao('btn prim bloco', `📣 quero me candidatar a ${alvo.cargoNome}`, () => irPara(alvo.cargo)));
+    else det.append(el('p', 'nota', fase === 'inscricoes' ? 'nenhuma vaga aberta para você agora.' : 'as inscrições abrem na segunda-feira.'));
+    guia.append(det);
+  }
+  /** selo da aba: votar, já votou ou inscrições abertas */
+  function seloAba(cargo: CargoId) {
+    const es = lista.filter((e) => e.cargo === cargo);
+    if (es.some((e) => e.status === 'votacao' && (!e.meuVoto || e.meuVoto.invalido))) return ' 🗳️';
+    if (es.some((e) => e.status === 'votacao')) return ' ✅';
+    if (es.some((e) => e.status === 'inscricoes')) return ' ✋';
+    return '';
+  }
+
   function pintar() {
-    tabs.querySelectorAll<HTMLButtonElement>('button').forEach((b) => { const on = b.dataset.k === aba; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    tabs.querySelectorAll<HTMLButtonElement>('button').forEach((b) => { const on = b.dataset.k === aba; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); b.textContent = (ABAS.find((a) => a.id === b.dataset.k)?.rot || '') + seloAba(b.dataset.k as CargoId); });
     caixa.innerHTML = '';
     const doCargo = lista.filter((e) => e.cargo === aba);
     if (publico) { caixa.append(el('p', 'nota', 'para se candidatar e votar, confirme a sua casa (link do direct ou código de verificação).')); if (entrar) caixa.append(botao('btn prim bloco', 'confirmar minha casa', entrar)); }

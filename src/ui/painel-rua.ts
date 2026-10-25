@@ -18,6 +18,7 @@
 import { el, botao, toast } from './dom';
 import { social, type RuaDetalhe, type RuaResumo, type ResultadoTroca, type Morador } from '../api/social';
 import { CORES } from '../mundo/avatares3d';
+import { recompensasApi } from '../api/recompensas';
 
 export type PainelRuaCtx = {
   ruaId?: string; ibge?: number; cidadeNome?: string;
@@ -118,15 +119,39 @@ function desenharRua(c: HTMLElement, d: RuaDetalhe, ctx: PainelRuaCtx, redesenha
   }
   c.append(ob);
 
-  // competição (Fase 3: estado real ou indisponível)
-  const cp = el('div', 'cartao-b'); cp.append(el('h2', '', 'competição da semana'));
-  if (!d.competicao.disponivel) cp.append(el('p', 'nota', 'a competição de ruas ainda não está ligada neste servidor.'));
-  else {
-    const k = d.competicao;
-    for (const [r, v] of [['modo', k.modo === 'cooperativa' ? 'cooperativa (sem adversário)' : 'competitiva'], ['posição', k.posicao ? k.posicao + 'º' : '—'], ['pontos', String(k.pontos)], ['fecha', dataCurta(k.fechaEm)]] as [string, string][]) { const l = el('div', 'linha'); l.append(el('span', '', r), el('b', '', v)); cp.append(l); }
-  }
-  cp.append(el('p', 'nota', d.regras.vinculoCompetitivo + '. Competição de ruas não escolhe prefeito.'));
+  // competição da semana: placar, troféus e como ganhar (dados completos de /api/ruas/:id/competicao)
+  const cp = el('div', 'cartao-b'); cp.append(el('h2', '', '🏆 troféu da semana'));
+  const como = el('details', 'hub-como'); como.append(el('summary', '', 'como a rua ganha o troféu?'));
+  for (const [ic, t] of [['✅', 'cada morador faz as missões do dia: até 30 pontos por dia pra rua'], ['👥', 'precisa de 3 moradores ativos quando a semana começa (segunda)'], ['📊', 'disputa com as ruas do mesmo tamanho na sua cidade'], ['🏆', 'domingo fecha: a 1ª ganha o troféu no mapa, faixa e decoração por 1 semana']] as [string, string][]) { const l = el('div', 'expl-p'); l.append(el('span', 'expl-ic', ic), el('span', '', t)); como.append(l); }
+  const corpoCp = el('div'); corpoCp.append(el('p', 'nota', 'carregando placar…'));
+  cp.append(corpoCp, como, el('p', 'nota', d.regras.vinculoCompetitivo + '. Competição de ruas não escolhe prefeito.'));
   c.append(cp);
+  void recompensasApi.competicao(rua.id).then((k) => {
+    corpoCp.innerHTML = '';
+    if (!k.ok) { corpoCp.append(el('p', 'nota', d.competicao.disponivel ? `pontos da semana: ${d.competicao.pontos}` : 'a competição de ruas ainda não está ligada neste servidor.')); return; }
+    const linha = (r: string, v: string) => { const l = el('div', 'linha'); l.append(el('span', '', r), el('b', '', v)); corpoCp.append(l); };
+    linha('fecha', dataCurta(k.temporada.fim));
+    if (!k.participa || !k.entrada) corpoCp.append(el('p', 'msg', k.motivo || 'a rua entra na disputa na próxima semana.'));
+    else if (k.entrada.modo === 'competitivo' && k.ranking?.length) {
+      linha('pontos da rua', String(k.entrada.pontos)); linha('moradores pontuando', k.entrada.participacao_pct + '%');
+      corpoCp.append(el('h3', '', `placar da cidade · divisão ${k.entrada.divisao}`));
+      for (const x of k.ranking) {
+        const l = el('div', 'rk' + (x.street_id === rua.id ? ' eu' : ''));
+        const nm = el('span', 'nome'); nm.append(el('b', '', x.nome + (x.street_id === rua.id ? ' (sua rua)' : '')), el('small', '', `${x.elenco} moradores · ${x.participacao_pct}% jogando`));
+        l.append(el('span', 'pos', x.colocacao_atual === 1 ? '🏆' : String(x.colocacao_atual)), nm, el('span', 'n', `${x.pontos} pts`)); corpoCp.append(l);
+      }
+    } else if (k.cooperativo) {
+      corpoCp.append(el('p', 'nota', k.cooperativo.motivo));
+      linha('meta da rua', `${k.cooperativo.pontos} / ${k.cooperativo.meta}`);
+      const br = el('div', 'barra'); const bi = el('i'); bi.style.width = k.cooperativo.pct + '%'; br.append(bi); corpoCp.append(br);
+      if (k.liga_regional) { corpoCp.append(el('h3', '', 'liga regional (só comparação)')); k.liga_regional.ruas.forEach((x, i) => { const l = el('div', 'rk' + (x.street_id === rua.id ? ' eu' : '')); const nm = el('span', 'nome'); nm.append(el('b', '', x.nome), el('small', '', x.cidade)); l.append(el('span', 'pos', String(i + 1)), nm, el('span', 'n', `${x.pontos} pts`)); corpoCp.append(l); }); }
+    }
+    if (k.eu?.aviso) corpoCp.append(el('p', 'nota', k.eu.aviso));
+    const tros = k.trofeus.filter((t) => t.tipo === 'trofeu' || t.tipo === 'meta_cooperativa');
+    corpoCp.append(el('h3', '', 'estante de troféus'));
+    if (!tros.length) corpoCp.append(el('p', 'nota', 'nenhum troféu ainda. A primeira vitória fica aqui pra sempre.'));
+    else { const est = el('div', 'voto-chips'); for (const t of tros) est.append(el('span', 'chip am', `${t.tipo === 'trofeu' ? '🏆 campeã' : '🎯 meta batida'} · semana ${t.semana}`)); corpoCp.append(est); }
+  });
 
   // casas e moradores
   const mo = el('div', 'cartao-b'); mo.append(el('h2', '', `casas e moradores (${d.moradores.length})`));
@@ -176,8 +201,8 @@ function desenharRua(c: HTMLElement, d: RuaDetalhe, ctx: PainelRuaCtx, redesenha
   if (eu?.temCasa) {
     const mu = el('div', 'cartao-b'); mu.append(el('h2', '', eu.souMembro ? 'mudar de rua' : 'outras ruas'));
     mu.append(el('p', 'nota', 'sua casa, avatar e inventário vão junto. Pontos da competição desta semana ficam com a rua antiga.'));
-    const lista = el('div'); mu.append(botao('btn mini', 'ver ruas de ' + rua.cidade, async (ev) => { (ev.currentTarget as HTMLButtonElement).remove(); await desenharLista(lista, rua.ibge, ctx, redesenhar, eu.minhaRua); }), lista);
-    c.append(mu);
+    const lista = el('div'); mu.append(lista);
+    c.append(mu); void desenharLista(lista, rua.ibge, ctx, redesenhar, eu.minhaRua);
     if (eu.souFundador && rua.ocupadas === 0 && rua.status !== 'arquivada') {
       const ar = el('div', 'cartao-b'); ar.append(el('h2', '', 'arquivar rua'), el('p', 'nota', 'só ruas vazias podem ser arquivadas. O histórico fica guardado.'));
       const b = botao('btn mini', 'arquivar esta rua', async () => { if (!confirm('arquivar esta rua vazia?')) return; b.disabled = true; const r = await social.arquivarRua(rua.id); toast(r.ok ? 'rua arquivada' : r.erro); if (r.ok) redesenhar({ ruaId: undefined }); else b.disabled = false; });

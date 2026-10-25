@@ -3,6 +3,7 @@ import type { Mundo } from '../mundo/mundo';
 import { criarMarcadores, raioMarcadorPx } from '../mundo/marcadores';
 import { criarRotulos, type Rotulo } from '../mundo/rotulos';
 import { criarCidades3D } from '../mundo/cidades3d';
+import { criarPets } from '../mundo/pets3d';
 import { criarRaios } from '../mundo/raios';
 import { iniciarRuaViva } from './ruaviva';
 import { iniciarJornal } from './jornal';
@@ -55,6 +56,7 @@ export async function iniciarApp(mundo: Mundo) {
   const AMARELAS = new Set(dados.ORDEM.slice(0, ehCel ? 45 : 70).map((c) => c.ibge));
   const redesenharMarcadores = () => marc.definir(dados.CID.map((c) => ({ x: c.x, y: c.y, n: c.n, amarelo: AMARELAS.has(c.ibge) || (ctx.sel?.tipo === 'cid' && ctx.sel.c === c) })));
   const cid3d = criarCidades3D(mundo.scene, dados, mundo.camera, ehCel ? { maxCidades: 40, maxCasas: 5000 } : { maxCidades: 100, maxCasas: 13000 });
+  const pets3d = criarPets(mundo.scene, cid3d); (window as any).__pets3d = pets3d;
   const rot = criarRotulos($('camada'));
   // cidades "em alta" (demo: as que mais pontuaram na semana) ganham raio de luz na vista de longe
   const raios = criarRaios([...dados.CID].sort((a, b) => b.pts - a.pts).slice(0, 14).map((c) => ({ x: c.x, y: c.y })));
@@ -232,7 +234,7 @@ export async function iniciarApp(mundo: Mundo) {
   const candCid = dados.ORDEM.slice(0, 600);
   let tick = 0;
   mundo.aoPasso((dt, t) => {
-    cid3d.passo(t); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
+    cid3d.passo(t); pets3d.passo(t, mundo.camera.dist); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
     const D = mundo.camera.dist;
     marc.passo(D, mundo.renderer.getPixelRatio(), innerWidth < 600 && D > 3000 ? 0.85 : 1);
     if ((tick++ & 1) === 1) return;

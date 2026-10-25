@@ -494,3 +494,6 @@ html.filme body > *:not(#app), html.filme #app > *:not(#gl) { display: none !imp
   .perfil-av { width: 34px; height: 34px; }
   #form { width: min(calc(100% - 104px), 460px); margin: 0 52px; }
 }
+
+/* painel do pet: prévia 3D */
+.pet-cv { display: block; width: 100%; height: 180px; border-radius: 14px; background: linear-gradient(#cfe9ff, #eaf6e2); margin-top: 8px; }

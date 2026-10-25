@@ -33,3 +33,12 @@ export const api = {
   recompensas: () => req<{ resumo: { xp_total: number; xp_hoje: number; teto_xp_dia: number } }>('GET', '/recompensas/eu'),
   ruasDaCidade: (ibge: number) => req<{ ruas: RuaUI[] }>('GET', `/cidades/${ibge}/ruas`),
 };
+
+export type Especie = 'gato' | 'cachorro';
+export type PetUI = { especie: Especie; cor: string; nome: string };
+export type PetMapa = PetUI & { ibge: number; lote: number };
+export const petsApi = {
+  eu: () => req<{ pet: PetUI | null; pontos: number; meta: number; liberado: boolean; temCasa: boolean; cores: Record<Especie, string[]> }>('GET', '/pets/eu'),
+  adotar: (d: PetUI) => req<{ pet: PetUI }>('POST', '/pets/eu', d),
+  daCidade: (ibges: number[]) => req<{ pets: PetMapa[] }>('GET', '/pets?ibge=' + ibges.join(',')),
+};

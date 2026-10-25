@@ -8,6 +8,7 @@ import { api } from '../api/cliente';
 import { montarPainelRua } from './painel-rua';
 import { montarPainelAvatar } from './painel-avatar';
 import { montarPainelEleicoes } from './painel-eleicoes';
+import { montarPainelPet } from './painel-pet';
 import { montarPainelMissoes } from './painel-missoes';
 import { montarPainelLoja } from './painel-loja';
 import { painelLojas, painelNegocio } from './painel-lojas-neg';
@@ -42,6 +43,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     ruas: { titulo: 'minha rua', desenhar: (c, o) => montarPainelRua(c, { ruaId: o?.ruaId, ibge: o?.cid?.ibge, cidadeNome: o?.cid?.nome, abrirAvatar: () => abrir('avatar'), aoMudarDeRua: () => toast('mudança registrada: sua casa e seu avatar vão junto') }) },
     avatar: { titulo: 'meu avatar', desenhar: async (c) => { descarte?.dispose(); descarte = await montarPainelAvatar(c, { abrirReivindicar: () => abrir('reivindicar', { gi: ctx.eu() }), aoSalvar: () => { toast('avatar salvo'); (window as any).__carregarEu?.(); } }); } },
     missoes: { titulo: 'missões do dia', desenhar: (c) => montarPainelMissoes(c, ctx) },
+    pet: { titulo: 'meu pet', desenhar: (c) => montarPainelPet(c, abrir) },
     videos: { titulo: 'destaques da semana', desenhar: (c) => videos(c) },
     notificacoes: { titulo: 'notificações', desenhar: (c) => notificacoes(c) },
     jornal: { titulo: 'jornal do dia', desenhar: (c) => montarJornal(c, ctx, abrir, fechar) },
@@ -52,6 +54,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
   const EXPLICA: Record<string, { tit: string; passos: [string, string][] }> = {
     ruas: { tit: 'como funciona a sua rua', passos: [['🏠', 'toda casa fica numa rua da cidade (até 24 casas por rua)'], ['🤝', 'chame amigos com o convite: eles viram seus vizinhos e aparecem online na rua'], ['🏆', 'a rua faz missões juntas, constrói a obra e disputa o troféu da semana']] },
     eleicoes: { tit: 'como funciona a eleição virtual', passos: [['✋', 'seg a qui: quem quiser se candidata (líder da rua, prefeito ou presidente)'], ['🗳️', 'sex a dom: cada morador vota 1 vez por cargo; pode trocar até fechar'], ['👑', 'dom 21h: quem tiver mais votos assume a semana seguinte e escolhe obras e festas']] },
+    pet: { tit: 'como ganhar o seu pet', passos: [['⭐', 'junte pontos com missões, trabalho e obra da rua'], ['🔓', 'chegou na meta: escolha gato ou cachorro, a cor e o nome'], ['🏠', 'ele fica na frente da sua casa no mapa e todo mundo vê']] },
     avatar: { tit: 'o seu avatar', passos: [['🎨', 'escolha pele, cabelo, roupa, cores e acessório'], ['💾', 'salve: ele aparece na frente da sua casa no mapa'], ['👋', 'quando você entra, seus vizinhos te veem online e podem acenar']] },
   };
   function explicacao(c: HTMLElement, id: string) {

@@ -43,6 +43,16 @@ export async function montarHub(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?
   como.append(el('p', 'nota', 'a casa sobe de nível com o XP e nunca desce. Teto de 100 XP por dia para ninguém ganhar no cansaço.'));
   s1.append(como); c.append(s1);
 
+  /* 1b) pet da casa */
+  const sp = secao('meu pet'); c.append(sp);
+  void api('GET', '/pets/eu').then((p) => {
+    if (!p.ok) { sp.remove(); return; }
+    if (p.pet) sp.append(el('p', '', `${p.pet.especie === 'gato' ? '🐱' : '🐶'} ${p.pet.nome} está na frente da sua casa.`));
+    else if (p.liberado) sp.append(el('p', '', '🔓 liberado! Escolha gato ou cachorro, a cor e o nome.'));
+    else sp.append(el('p', '', `🔒 libera com ${p.meta} pontos · você tem ${p.pontos}`), barra(p.pontos / Math.max(1, p.meta)));
+    const b = el('div', 'hub-bts'); b.append(botao('btn prim', p.pet ? 'trocar meu pet' : p.liberado ? 'adotar pet 🐾' : 'ver os pets', () => abrir('pet'))); sp.append(b);
+  });
+
   /* 2) minha rua */
   const s2 = secao('minha rua');
   if (rv.ok && rv.rua) {
