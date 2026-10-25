@@ -22,7 +22,11 @@ export function textoAvisoDono(handle: string | null, cidade: string) {
   return `Oi${handle ? ' @' + handle : ''}! Sua casa em ${cidade} já está no mapa do Brasil virtual 🏠 Veja aqui: ${url()}/${handle ? '?u=' + encodeURIComponent(handle) : ''}`;
 }
 
+/** IG_RESPONDER=0: o app oficial não responde (ex.: enquanto o ManyChat responde pela ponte) */
+export const respostasLigadas = () => process.env.IG_RESPONDER !== '0';
+
 async function registrar(c: Tx, canal: string, chave: string, identityId: string | null, commentId: string, texto: string, job: string) {
+  if (!respostasLigadas()) return null;
   const prov = provedorInstagram();
   const o = await q1<{ id: string }>(
     `insert into outbound_messages (canal, identity_id, referencia, chave, modo, estado, texto_redigido)

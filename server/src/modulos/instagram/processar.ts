@@ -8,7 +8,7 @@ import { sha256, tokenForte } from '../../seguranca/cripto';
 import { resolverCidade } from '../cidades/resolver';
 import { provisionar, garantirIdentidade, marcarOnboarding } from '../mundo/provisionar';
 import { provedorInstagram } from './provedor';
-import { enfileirarRespostaPublica, enfileirarAvisoDono } from './respostas';
+import { enfileirarRespostaPublica, enfileirarAvisoDono, respostasLigadas } from './respostas';
 
 export const CAMPOS_COMENTARIO = new Set(['comments', 'live_comments']);
 /** código do desafio: mesmo alfabeto de codigoLegivel() (sem I, O, 0, 1) */
@@ -147,6 +147,7 @@ export function textoPrivateReply(link: string, cidade: string) {
 }
 
 export async function enfileirarPrivateReply(c: Tx, identityId: string, commentId: string) {
+  if (!respostasLigadas()) return null;
   const prov = provedorInstagram();
   const o = await q1<{ id: string }>(
     `insert into outbound_messages (canal, identity_id, referencia, chave, modo, estado, texto_redigido)
