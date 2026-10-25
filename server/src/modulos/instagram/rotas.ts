@@ -6,6 +6,7 @@ import { q1, tx } from '../../db/db';
 import { enfileirar, registrarJob } from '../../jobs/fila';
 import { assinaturaValida, iguais } from '../../seguranca/cripto';
 import { extrairComentarios, idComentario, processarEvento, enviarPrivateReply } from './processar';
+import { enviarGravada } from './respostas';
 
 export const ROTA_WEBHOOK = '/api/webhooks/instagram';
 
@@ -47,4 +48,6 @@ export function registrar(app: App) {
   app.post(ROTA_WEBHOOK, receber);
   registrarJob('ig.comentario', async (d) => { await processarEvento(String(d.evento_id)); });
   registrarJob('ig.private_reply', async (d, job) => { await enviarPrivateReply(String(d.outbound_id), job.tentativas); });
+  registrarJob('ig.resposta_publica', async (d, job) => { await enviarGravada(String(d.outbound_id), 'publica', job.tentativas); });
+  registrarJob('ig.aviso_dm', async (d, job) => { await enviarGravada(String(d.outbound_id), 'dm', job.tentativas); });
 }

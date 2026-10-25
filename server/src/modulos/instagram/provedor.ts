@@ -13,6 +13,8 @@ export interface InstagramProvider {
   /** modo gravado em outbound_messages */
   readonly modo: 'oficial' | 'dry_run';
   enviarPrivateReply(a: { commentId: string; texto: string }): Promise<EnvioResultado>;
+  /** resposta PÚBLICA embaixo do comentário (POST /{comment-id}/replies). Opcional: provedores de teste podem não ter. */
+  responderComentario?(a: { commentId: string; texto: string }): Promise<EnvioResultado>;
 }
 
 // ---------- conexão (token cifrado em repouso) ----------
@@ -35,18 +37,24 @@ async function marcarConexao(contaId: string, status: 'expirada' | 'revogada') {
 export class ProvedorOficial implements InstagramProvider {
   readonly nome = 'oficial' as const; readonly modo = 'oficial' as const;
   constructor(private timeoutMs = 10_000) {}
+  async responderComentario(a: { commentId: string; texto: string }): Promise<EnvioResultado> {
+    return this.postar(`${encodeURIComponent(a.commentId)}/replies`, { message: a.texto });
+  }
   async enviarPrivateReply(a: { commentId: string; texto: string }): Promise<EnvioResultado> {
+    return this.postar(`${encodeURIComponent(config.instagram.contaId || '')}/messages`, { recipient: { comment_id: a.commentId }, message: { text: a.texto } });
+  }
+  private async postar(caminho: string, corpo: unknown): Promise<EnvioResultado> {
     const conta = config.instagram.contaId;
     if (!conta) return { ok: false, erro: 'IG_CONTA_ID não configurado', resposta: {} };
     const token = await obterToken(conta);
     if (!token) return { ok: false, erro: 'conexão do Instagram sem token ativo', resposta: {} };
-    const url = `https://graph.instagram.com/${config.instagram.graphVersao}/${encodeURIComponent(conta)}/messages`;
+    const url = `https://graph.instagram.com/${config.instagram.graphVersao}/${caminho}`;
     const ac = new AbortController(); const t = setTimeout(() => ac.abort(), this.timeoutMs);
     try {
       const r = await fetch(url, {
         method: 'POST', signal: ac.signal,
         headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-        body: JSON.stringify({ recipient: { comment_id: a.commentId }, message: { text: a.texto } }),
+        body: JSON.stringify(corpo),
       });
       let j: any = null; try { j = await r.json(); } catch { /* corpo vazio */ }
       const resposta = JSON.parse(redigir(JSON.stringify({ status: r.status, corpo: j })));
@@ -73,6 +81,10 @@ export class ProvedorDev implements InstagramProvider {
   async enviarPrivateReply(a: { commentId: string; texto: string }): Promise<EnvioResultado> {
     for (const f of ouvintesDev) f(a);
     if (config.ambiente === 'dev') console.log(`[instagram-dev · DRY-RUN, nada enviado] private reply ao comentário ${a.commentId}: ${a.texto}`);
+    return { ok: true, resposta: { adaptador: 'dev', dry_run: true } };
+  }
+  async responderComentario(a: { commentId: string; texto: string }): Promise<EnvioResultado> {
+    if (config.ambiente === 'dev') console.log(`[instagram-dev · DRY-RUN, nada enviado] resposta pública ao comentário ${a.commentId}: ${a.texto}`);
     return { ok: true, resposta: { adaptador: 'dev', dry_run: true } };
   }
 }

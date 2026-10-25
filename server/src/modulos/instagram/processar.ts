@@ -8,6 +8,7 @@ import { sha256, tokenForte } from '../../seguranca/cripto';
 import { resolverCidade } from '../cidades/resolver';
 import { provisionar, garantirIdentidade, marcarOnboarding } from '../mundo/provisionar';
 import { provedorInstagram } from './provedor';
+import { enfileirarRespostaPublica, enfileirarAvisoDono } from './respostas';
 
 export const CAMPOS_COMENTARIO = new Set(['comments', 'live_comments']);
 /** código do desafio: mesmo alfabeto de codigoLegivel() (sem I, O, 0, 1) */
@@ -93,12 +94,17 @@ export async function processarComentario(m: MudancaComentario): Promise<Resulta
     if (res.tipo === 'ok') {
       const pr = await provisionar(c, { ...ident, ibge: res.ibge, origem: 'instagram:' + commentId });
       if (pr.resultado === 'revoked') return fim('revoked', 'identidade removida a pedido do titular', { identityId: pr.identityId });
+      const mun = await q1<{ nome: string; uf: string }>(`select nome, uf from municipios where ibge = $1`, [pr.resultado === 'provisioned' || pr.resultado === 'duplicate' ? pr.ibge : res.ibge], c);
+      const nomeCidade = mun ? `${mun.nome} - ${mun.uf}` : '';
       if (pr.resultado === 'provisioned') {
         await enfileirarPrivateReply(c, pr.identityId, commentId);
+        await enfileirarRespostaPublica(c, { commentId, identityId: pr.identityId, tipo: 'casa_nova', handle: username, cidade: nomeCidade });
         return fim('provisioned', null, { identityId: pr.identityId, houseId: pr.houseId, ibge: pr.ibge });
       }
       // já tem casa: não muda residência. Se a reserva segue sem dono e não há link válido nem envio pendente,
       // este novo comentário permite uma nova private reply (uma por comentário).
+      await enfileirarRespostaPublica(c, { commentId, identityId: pr.identityId, tipo: 'ja_tinha', handle: username, cidade: nomeCidade });
+      if (pr.status === 'reivindicada') await enfileirarAvisoDono(c, { commentId, identityId: pr.identityId, handle: username, cidade: nomeCidade });
       if (pr.status === 'reservada') {
         const aberto = await q1(`select 1 from outbound_messages where identity_id = $1 and estado = 'pendente'
                                  union all select 1 from identity_claims where identity_id = $1 and consumido_em is null and expira_em > now() limit 1`, [pr.identityId], c);
@@ -114,6 +120,7 @@ export async function processarComentario(m: MudancaComentario): Promise<Resulta
       ? 'cidade ambígua: ' + res.candidatos.slice(0, 8).map((x) => `${x.nome}-${x.uf}`).join(', ') + (res.candidatos.length > 8 ? '…' : '') + ' (informe a UF)'
       : 'cidade não encontrada no comentário (escreva "Cidade - UF")';
     await marcarOnboarding(c, idt.id, 'pending_city_resolution', motivo);
+    await enfileirarRespostaPublica(c, { commentId, identityId: idt.id, tipo: 'cidade_nao_achada', handle: username, cidade: null });
     return fim('pending_city_resolution', motivo, { identityId: idt.id, candidatos: res.tipo === 'ambigua' ? res.candidatos.slice(0, 50) : undefined });
   });
 }

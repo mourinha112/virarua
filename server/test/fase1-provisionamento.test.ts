@@ -38,9 +38,9 @@ describe('fase1 · provisionamento', () => {
     expect(await n(`plots where id = $1`, [casas[0].plot_id])).toBe(1);
     expect(await n(`avatars where house_id = $1 and ativo`, [casas[0].id])).toBe(1);
     expect(await n(`street_memberships where house_id = $1 and saiu_em is null`, [casas[0].id])).toBe(1);
-    expect(await n(`outbound_messages where identity_id = $1`, [idt.id])).toBe(1);
+    expect(await n(`outbound_messages where identity_id = $1 and canal = 'ig_private_reply'`, [idt.id])).toBe(1);
     expect(await n(`identity_claims where identity_id = $1`, [idt.id])).toBe(1);
-    const om = await q1<any>(`select modo, estado, texto_redigido from outbound_messages where identity_id = $1`, [idt.id]);
+    const om = await q1<any>(`select modo, estado, texto_redigido from outbound_messages where identity_id = $1 and canal = 'ig_private_reply'`, [idt.id]);
     expect(om).toMatchObject({ modo: 'dry_run', estado: 'dry_run' });
     expect(om.texto_redigido).toContain('t=[redigido]');           // o token nunca vai para o banco
     expect(await q1(`select estado, entrega from onboarding where identity_id = $1`, [idt.id])).toEqual({ estado: 'claim_pending', entrega: 'dry_run' });
@@ -69,7 +69,7 @@ describe('fase1 · provisionamento', () => {
     expect(rs.map((r) => r.estado).sort()).toEqual(['duplicate', 'duplicate', 'provisioned']);
     const idt = (await idDe(autor))!;
     expect(await casasDe(idt.id)).toHaveLength(1);
-    expect(await n(`outbound_messages where identity_id = $1`, [idt.id])).toBe(1);   // uma só private reply
+    expect(await n(`outbound_messages where identity_id = $1 and canal = 'ig_private_reply'`, [idt.id])).toBe(1);   // uma só private reply
     // também pela fila, com workers concorrentes
     const c = cliente(); const autor2 = novoId('2400');
     await postarWebhook(c, payloadComentario({ fromId: autor2, text: 'Caruaru - PE' }));
@@ -171,14 +171,14 @@ describe('fase1 · provisionamento', () => {
       const body = JSON.parse(chamadas[0].init.body);
       expect(body.recipient).toEqual({ comment_id: cid });
       expect(chamadas[0].init.headers.authorization).toBe('Bearer IGQ-token-sintetico-de-teste-0000000000');
-      expect(await q1(`select modo, estado from outbound_messages where identity_id = $1`, [idt.id])).toEqual({ modo: 'oficial', estado: 'falhou' });
+      expect(await q1(`select modo, estado from outbound_messages where identity_id = $1 and canal = 'ig_private_reply'`, [idt.id])).toEqual({ modo: 'oficial', estado: 'falhou' });
       const ob = await q1<any>(`select estado, entrega, detalhe from onboarding where identity_id = $1`, [idt.id]);
       expect(ob).toMatchObject({ estado: 'delivery_failed', entrega: 'delivery_failed' });
       expect(ob.detalhe).toMatch(/código de verificação/);
       // o link da tentativa que falhou não vale
       expect(await n(`identity_claims where identity_id = $1 and consumido_em is null and expira_em > now()`, [idt.id])).toBe(0);
       // reexecutar o job não reenvia
-      const om = await q1<{ id: string }>(`select id from outbound_messages where identity_id = $1`, [idt.id]);
+      const om = await q1<{ id: string }>(`select id from outbound_messages where identity_id = $1 and canal = 'ig_private_reply'`, [idt.id]);
       await enviarPrivateReply(om!.id); expect(chamadas).toHaveLength(1);
       // o token fica cifrado em repouso
       const con = await q1<{ token_cifrado: Buffer }>(`select token_cifrado from instagram_connections where conta_id = $1`, [CONTA()]);
@@ -198,7 +198,7 @@ describe('fase1 · provisionamento', () => {
     try {
       const autor = novoId('2400');
       const r = await processarComentario(comentario({ fromId: autor, text: 'Maceió - AL' }));
-      const om = await q1<{ id: string }>(`select id from outbound_messages where identity_id = $1`, [r.identityId]);
+      const om = await q1<{ id: string }>(`select id from outbound_messages where identity_id = $1 and canal = 'ig_private_reply'`, [r.identityId]);
       await expect(enviarPrivateReply(om!.id, 1)).rejects.toThrow();
       await expect(enviarPrivateReply(om!.id, 2)).rejects.toThrow();
       await enviarPrivateReply(om!.id, 3);
