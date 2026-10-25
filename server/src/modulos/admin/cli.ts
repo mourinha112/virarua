@@ -3,6 +3,7 @@
    npx tsx server/src/modulos/admin/cli.ts revogar  <userId> <papel> "<motivo>"
    npx tsx server/src/modulos/admin/cli.ts papeis
    npx tsx server/src/modulos/admin/cli.ts criar-admin <login>              (pede a senha sem mostrar; dá todos os papéis)
+   npx tsx server/src/modulos/admin/cli.ts link-entrada <@handle>          (link de uso único, 15 min, para entrar no jogo como o dono)
    npx tsx server/src/modulos/admin/cli.ts casa <@handle> <ibge> "<motivo>"   (casa reivindicada sem passar pelo Instagram)
    npx tsx server/src/modulos/admin/cli.ts sessao-dev <userId>     (só fora de produção: imprime cookie smn_sess para testar o painel)
    Toda concessão/revogação vai para admin_audit_logs (ator = null: operação de servidor). */
@@ -14,6 +15,7 @@ import { tokenForte, sha256 } from '../../seguranca/cripto';
 import { PAPEIS, type Papel } from './auth';
 import { hashSenha, senhaFraca } from './login';
 import { provisionar } from '../mundo/provisionar';
+import { gerarLinkEntrada } from './link-entrada';
 
 /** lê uma linha do terminal sem ecoar (senha) */
 let _linhas: Promise<string[]> | null = null;
@@ -102,13 +104,17 @@ async function main(a: string[]) {
     const r = await casaManual(user, Number(papel), motivo || 'casa criada pelo operador');
     console.log(`${r.nova ? 'casa criada' : 'a casa já existia'}: @${user.replace(/^@/, '').toLowerCase()} em ${r.cidade}, lote ${r.lote}`);
   }
+  else if (cmd === 'link-entrada') {
+    const t = await gerarLinkEntrada(user || '');
+    console.log('abra em até 15 min (vale uma vez): ' + config.urlPublica.replace(/\/+$/, '') + '/api/entrar-link?t=' + t);
+  }
   else if (cmd === 'papeis') console.table(await q(`select r.user_id, u.nome_publico, r.papel, r.concedido_em from admin_roles r join users u on u.id = r.user_id order by r.concedido_em`));
   else if (cmd === 'sessao-dev') {
     if (config.ambiente === 'producao') throw new Error('sessao-dev não existe em produção');
     const t = tokenForte(32);
     await q(`insert into sessions (user_id, token_hash, expira_em, ua) values ($1, $2, now() + interval '2 hours', 'cli sessao-dev')`, [user, sha256(t)]);
     console.log(`document.cookie = "smn_sess=${t}; path=/"   (cole no console do navegador em http://localhost:5173/admin.html)`);
-  } else { console.log('uso: conceder|revogar <userId> <papel> "<motivo>" · papeis · criar-admin <login> · casa <@handle> <ibge> "<motivo>" · sessao-dev <userId>'); return; }
+  } else { console.log('uso: conceder|revogar <userId> <papel> "<motivo>" · papeis · criar-admin <login> · casa <@handle> <ibge> "<motivo>" · link-entrada <@handle> · sessao-dev <userId>'); return; }
   console.log('ok');
 }
 

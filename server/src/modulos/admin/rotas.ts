@@ -11,6 +11,7 @@ import { normNome } from '../../db/semear';
 import { exigirArea, exigirAdmin, exigirMotivo, areasDe, sessaoMaxMin } from './auth';
 import { protegerLinha, paraCsv, type LinhaAuditoria } from './auditoria';
 import { registrarLoginAdmin } from './login';
+import { registrarLinkEntrada } from './link-entrada';
 import * as est from '../estabelecimentos/servico';
 
 async function corpo(c: Context): Promise<Record<string, any>> { try { const j = await c.req.json(); return j && typeof j === 'object' && !Array.isArray(j) ? j : {}; } catch { return {}; } }
@@ -60,6 +61,7 @@ export async function aplicarModeracao(ator: string, d: { reportId?: string | nu
 
 export function registrar(app: App) {
   registrarLoginAdmin(app);
+  registrarLinkEntrada(app);
   app.use('/api/admin/*', async (c, next) => { await next(); c.header('cache-control', 'no-store'); c.header('x-robots-tag', 'noindex'); });
   app.use('/api/admin/*', limite(240));
 
