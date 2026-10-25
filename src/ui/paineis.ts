@@ -319,12 +319,8 @@ export function montarPaineis(ctx: Ctx): Paineis {
     box.append(el('h2', '', 'reivindicar a casa'), el('p', '', 'digitar um @ nunca libera a casa. A prova é feita pelo Instagram oficial do jogo:'));
     const ol = el('ol'); for (const t of ['quando você comenta a cidade em qualquer post do @viraruajogo, o jogo responde no privado com um link de uso único;', 'abra o link e confirme: a casa fica sua e libera avatar, frase e decoração;', 'se o link não chegar, gere um código aqui e mande do seu perfil em qualquer post do @viraruajogo.']) ol.append(el('li', '', t));
     box.append(ol);
-    const msg = el('p', 'msg');
-    box.append(botao('btn prim', 'gerar código de verificação', async () => {
-      const r = await api.desafio(o?.gi !== undefined ? dados.USR[o.gi] : '');
-      msg.className = 'msg ' + (r.ok ? 'ok' : 'erro');
-      msg.textContent = r.ok ? `seu código: ${r.codigo} · válido por ${Math.round(r.validadeMin)} min. Publique a partir da SUA conta; o código só vale neste navegador.` : r.erro || 'servidor de contas indisponível.';
-    }), msg);
+    // o código é gerado e conferido na página de reivindicar (copiar, conferência automática e confirmação)
+    box.append(Object.assign(el('a', 'btn prim bloco', 'gerar código de verificação'), { href: '/reivindicar.html' }));
     c.append(box);
   }
 
