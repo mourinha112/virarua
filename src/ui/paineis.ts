@@ -317,7 +317,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
   function reivindicar(c: HTMLElement, o: { gi?: number }) {
     const box = el('div', 'cartao-b');
     box.append(el('h2', '', 'reivindicar a casa'), el('p', '', 'digitar um @ nunca libera a casa. A prova é feita pelo Instagram oficial do jogo:'));
-    const ol = el('ol'); for (const t of ['quando você comenta a cidade em qualquer post do @viraruajogo, o jogo responde no privado com um link de uso único;', 'abra o link e confirme: a casa fica sua e libera avatar, frase e decoração;', 'se o link não chegar, gere um código aqui e mande do seu perfil em qualquer post do @viraruajogo ou no direct do jogo.']) ol.append(el('li', '', t));
+    const ol = el('ol'); for (const t of ['quando você comenta a cidade em qualquer post do @viraruajogo, o jogo responde no privado com um link de uso único;', 'abra o link e confirme: a casa fica sua e libera avatar, frase e decoração;', 'se o link não chegar, gere um código aqui e mande do seu perfil em qualquer post do @viraruajogo.']) ol.append(el('li', '', t));
     box.append(ol);
     const msg = el('p', 'msg');
     box.append(botao('btn prim', 'gerar código de verificação', async () => {

@@ -106,6 +106,11 @@ function mostrarCodigo(codigo: string, validadeMin: number) {
   const box = cartao('publique este código');
   box.append(el('p', '', 'Copie o código e comente ele em qualquer post do @viraruajogo, pela SUA conta do Instagram. Esta página confere sozinha:'));
   box.append(el('div', 'codigo', codigo));
+  const copiar = botao('btn bloco', 'copiar o código', async () => {
+    try { await navigator.clipboard.writeText(codigo); copiar.textContent = 'copiado! agora cole no comentário'; }
+    catch { const r = document.createRange(); r.selectNodeContents(box.querySelector('.codigo')!); getSelection()?.removeAllRanges(); getSelection()?.addRange(r); copiar.textContent = 'código selecionado: copie e cole'; }
+  });
+  box.append(copiar);
   box.append(Object.assign(el('a', 'btn prim bloco', 'abrir o @viraruajogo'), { href: 'https://www.instagram.com/viraruajogo/', target: '_blank', rel: 'noopener noreferrer' }));
   box.append(el('p', 'nota', `Vale ${Math.round(validadeMin)} min e só conclui NESTE navegador. Se outra pessoa copiar o código, não ganha acesso à sua casa.`));
   const m = msg(); const acoes = el('div', 'acoes');
