@@ -60,5 +60,31 @@ async function buscar(fonte: string[], uf: string | null, ex?: Exec): Promise<Re
     if (ufsDistintas.size === 1) { const m = todos[0]; return { tipo: 'ok', ibge: m.ibge, nome: m.nome, uf: m.uf, via: as.length && !ms.length ? 'alias' : 'nome_unico' }; }
     return { tipo: 'ambigua', candidatos: [...new Map(todos.map((m) => [m.ibge, { ibge: m.ibge, nome: m.nome, uf: m.uf }])).values()] };
   }
+  return uf ? aproximada(fonte, uf, ex) : { tipo: 'nao_encontrada' };
+}
+
+/** distância de edição limitada (para no 2) */
+function dist(a: string, b: string) {
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  let ant = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const at = [i]; let min = i;
+    for (let j = 1; j <= b.length; j++) { at[j] = Math.min(ant[j] + 1, at[j - 1] + 1, ant[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); min = Math.min(min, at[j]); }
+    if (min > 1) return 2; ant = at;
+  }
+  return ant[b.length];
+}
+
+/** com UF e sem nome exato: nome pela metade ("buzios" → Armação dos Búzios, "embu" → Embu das Artes) ou uma letra
+    errada ("parati" → Paraty). Só aceita se der UMA cidade naquela UF; mais de uma vira pergunta (ambígua). */
+async function aproximada(fonte: string[], uf: string, ex?: Exec): Promise<Resolucao> {
+  const muns = await q<{ ibge: number; nome: string; uf: string; nome_norm: string }>(`select ibge, nome, uf, nome_norm from municipios where uf = $1`, [uf], ex);
+  for (let n = Math.min(6, fonte.length); n >= 1; n--) for (let i = 0; i + n <= fonte.length; i++) {
+    const g = fonte.slice(i, i + n).join(' '); if (g.replace(/ /g, '').length < 4) continue;
+    let achou = muns.filter((m) => (' ' + m.nome_norm + ' ').includes(' ' + g + ' '));
+    if (!achou.length && g.length >= 5) achou = muns.filter((m) => dist(g, m.nome_norm) <= 1);
+    if (achou.length === 1) return { tipo: 'ok', ibge: achou[0].ibge, nome: achou[0].nome, uf: achou[0].uf, via: 'alias' };
+    if (achou.length > 1 && achou.length <= 6) return { tipo: 'ambigua', candidatos: achou.map((m) => ({ ibge: m.ibge, nome: m.nome, uf: m.uf })) };
+  }
   return { tipo: 'nao_encontrada' };
 }
