@@ -42,7 +42,10 @@ export const DISP = (hex: string) => { const l = hexLin(hex); return new T.Color
 
 /** 0 = dia, 1 = noite. Pelo horário de Brasília (UTC−3); ?hora=19 força para teste. */
 export const NOITE = { value: 0 };
+/** botão dia/noite do mapa: null = segue o relógio de Brasília */
+export const NOITE_FORCADA: { v: number | null } = { v: null };
 export function fatorNoite(agoraMs = Date.now()) {
+  if (NOITE_FORCADA.v !== null) return NOITE_FORCADA.v;
   const p = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
   const h = p.has('hora') ? Number(p.get('hora')) : ((agoraMs / 3600_000 - 3) % 24 + 24) % 24;
   const s = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };

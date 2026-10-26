@@ -7,6 +7,7 @@ import { criarPets } from '../mundo/pets3d';
 import { criarObras } from '../mundo/obras3d';
 import { criarEnfeites } from '../mundo/enfeites3d';
 import { iniciarNovidades } from './novidades';
+import { iniciarLayout } from './layout';
 import { lembrarAparelho } from './aparelho';
 import { criarRaios } from '../mundo/raios';
 import { iniciarRuaViva } from './ruaviva';
@@ -64,9 +65,6 @@ export async function iniciarApp(mundo: Mundo) {
   const ehCel = mundo.Q.nivel <= 1;
 
   if (dados.p.demo) { const s = el('div', 'demo-selo', 'dados de demonstração · moradores fictícios'); $('app').append(s); }
-  $('totais').innerHTML = '';
-  $('totais').append(el('b', '', fmtN(dados.p.n) + ' casas'), el('i'), el('b', '', fmtN(dados.CID.length) + ' cidades'));
-  $('totais').setAttribute('aria-label', `${fmtN(dados.p.n)} casas em ${fmtN(dados.CID.length)} cidades`);
 
   /* ---------- camadas do mapa ---------- */
   const marc = criarMarcadores(mundo.renderer);
@@ -157,13 +155,14 @@ export async function iniciarApp(mundo: Mundo) {
   };
   ctx.paineis = montarPaineis(ctx);
   montarPerfil(ctx);
+  iniciarLayout(ctx);
   redesenharMarcadores();
 
   /* ---------- margens da área livre (câmera e rótulos evitam topo, cartão e barra) ---------- */
   function margens() {
     const H = innerHeight, topo = $('topo').getBoundingClientRect().bottom + 4;
     const cart = $('cartao'); const larga = innerWidth >= 900;
-    const base = !cart.hidden && !larga ? cart.getBoundingClientRect().top - 4 : $('tabbar').getBoundingClientRect().top - 4;
+    const base = !cart.hidden && !larga ? cart.getBoundingClientRect().top - 4 : document.querySelector('.rd-linha')!.getBoundingClientRect().top - 4;
     mundo.camera.margem.topo = topo / H; mundo.camera.margem.base = Math.max(0, (H - base) / H);
   }
   addEventListener('resize', margens); margens();
@@ -297,7 +296,8 @@ export async function iniciarApp(mundo: Mundo) {
       for (let k = 0; k < Math.min(2, fr.length); k++) { const h = fr[(k0 * 2 + k) % fr.length], gi = dados.POR_HANDLE.get(h); if (gi === undefined) continue; const c = dados.CID[dados.CID_DE[gi]]; const cg = dados.cargo(gi); L.push({ id: 'fa' + gi, x: c.x, y: c.y, txt: dados.p.frases[h], sub: (cg ? CARGOS_NOME[cg] + ' ' : '') + '@' + h, cls: 'alta', pri: 5e5, dy: -14 }); }
     }
     const topo = $('topo').getBoundingClientRect(), tab = $('tabbar').getBoundingClientRect(), cart = $('cartao');
-    const res = [{ x0: 0, y0: 0, x1: W, y1: topo.bottom }, { x0: tab.left, y0: tab.top, x1: tab.right, y1: H }];
+    const rod = $('rodape').getBoundingClientRect(), ctl = $('ctrl').getBoundingClientRect();
+    const res = [{ x0: 0, y0: 0, x1: W, y1: topo.bottom }, { x0: tab.left, y0: tab.top, x1: tab.right, y1: H }, { x0: rod.left, y0: rod.top, x1: rod.right, y1: rod.bottom }, { x0: ctl.left, y0: ctl.top, x1: ctl.right, y1: ctl.bottom }];
     if (!cart.hidden) { const r = cart.getBoundingClientRect(); res.push({ x0: r.left, y0: r.top, x1: r.right, y1: r.bottom }); }
     rot.reservar(res);
     rot.desenhar(L, (x, y, a) => cam.projetar(x, y, a ?? 0), W, H, ehCel ? (D < 80 ? 9 : D > 3500 ? 22 : 11) : (D < 80 ? 14 : D > 3500 ? 40 : 20));
@@ -320,9 +320,17 @@ export async function iniciarApp(mundo: Mundo) {
   // conta real logada: avatar na frente da própria casa + atalho "ver minha casa"
   async function carregarEu() {
     (window as any).__atualizarPerfil?.();
-    const r = await api.eu(); if (!r.ok || !r.casa) { cid3d.definirMeuAvatar(null); return; }
+    const r = await api.eu(); if (!r.ok || !r.casa) { cid3d.definirMeuAvatar(null); (window as any).__visitarCom = null; return; }
     const casa = r.casa; cid3d.definirMeuAvatar({ ibge: casa.cidade.ibge, lote: casa.lote_index, config: (r.avatar?.config || {}) as any });
-    (window as any).__irMinhaCasa = () => { const c = dados.POR_IBGE.get(casa.cidade.ibge); if (c) cid3d.forcar(c); const p = cid3d.posicaoLote(casa.cidade.ibge, casa.lote_index); if (p) mundo.camera.voar({ fx: p.x, fy: p.y, ld: Math.log(7), phi: 38 }); setTimeout(() => cid3d.acenarEu(), 2500); };
+    // visitar com o bonequinho: o avatar sai de casa e vai até a porta da casa visitada
+    (window as any).__visitarCom = (gi: number) => {
+      const ci = dados.CID_DE[gi]; if (ci < 0) return false; const c = dados.CID[ci];
+      cid3d.forcar(c); cid3d.definirMeuAvatar({ ibge: c.ibge, lote: gi - c.ini, config: (r.avatar?.config || {}) as any });
+      const p = cid3d.posicaoCasa(gi); if (p) mundo.camera.voar({ fx: p.x, fy: p.y, ld: Math.log(7), phi: 34 });
+      setTimeout(() => cid3d.acenarEu(), 2200); return true;
+    };
+    (window as any).__irMinhaCasa = () => {
+      cid3d.definirMeuAvatar({ ibge: casa.cidade.ibge, lote: casa.lote_index, config: (r.avatar?.config || {}) as any }); const c = dados.POR_IBGE.get(casa.cidade.ibge); if (c) cid3d.forcar(c); const p = cid3d.posicaoLote(casa.cidade.ibge, casa.lote_index); if (p) mundo.camera.voar({ fx: p.x, fy: p.y, ld: Math.log(7), phi: 38 }); setTimeout(() => cid3d.acenarEu(), 2500); };
   }
   (window as any).__carregarEu = carregarEu;
   // restaura a sessão pelo aparelho lembrado (cookie apagado) antes de carregar a conta

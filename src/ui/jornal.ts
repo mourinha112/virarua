@@ -16,7 +16,7 @@ export function iniciarJornal(ctx: Ctx) {
   const lido = (() => { try { return localStorage.getItem(LS) === hojeBR(); } catch { return false; } })();
   if (lido) b.querySelector('i')!.remove();
   b.onclick = () => { try { localStorage.setItem(LS, hojeBR()); } catch { /* ok */ } b.querySelector('i')?.remove(); ctx.paineis.abrir('jornal'); };
-  $('app').append(b);
+  $('atalhos').append(b);
 }
 
 export async function montarJornal(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?: any) => void, fechar: () => void) {

@@ -35,3 +35,12 @@ export const crescimentoApi = {
   salvarDecor: (itens: string[], bandeira: string | null) => req<{ escolhidos: string[] }>('POST', '/decor/eu', { itens, bandeira }),
   enfeites: (ibges: number[]) => req<{ casas: EnfeiteMapa[] }>('GET', '/enfeites?ibge=' + ibges.join(',')),
 };
+
+/* visita na casa: campainha com adesivo e curtir (+1 XP pro dono) · online agora */
+export type CasaSocial = { casa: { handle: string; reivindicada: boolean; minha: boolean }; campainhaHoje: number; campainhaTotal: number; curtidas: number; adesivos: Record<string, number>; eu: { tocouHoje: boolean; curtiu: boolean } };
+export const visitaApi = {
+  estado: (h: string) => req<CasaSocial>('GET', '/casa-social/' + encodeURIComponent(h)),
+  campainha: (h: string, adesivo: string) => req<CasaSocial & { xpDono: number }>('POST', '/casa-social/' + encodeURIComponent(h) + '/campainha', { adesivo }),
+  curtir: (h: string) => req<CasaSocial & { xpDono: number }>('POST', '/casa-social/' + encodeURIComponent(h) + '/curtir', {}),
+  online: (v: string) => req<{ online: number }>('POST', '/online', { v }),
+};

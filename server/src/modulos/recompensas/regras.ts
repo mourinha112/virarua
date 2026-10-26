@@ -34,6 +34,7 @@ const lista: Regra[] = [
   { id: 'xp10_loja@1', sistema: 'xp', quantidade: 10, escopo: 'edicao', descricao: '10 XP por marcar o @ de uma loja do mapa num comentário (1 vez por loja)' },
   { id: 'xp50_amigo@1', sistema: 'xp', quantidade: 50, escopo: 'edicao', descricao: '50 XP quando o amigo marcado num comentário ganha e confirma a casa' },
   { id: 'xp5_marcar@1', sistema: 'xp', quantidade: 5, escopo: 'edicao', descricao: '5 XP por @amigo marcado num comentário do jogo (até 3 por dia)' },
+  { id: 'xp1_visita@1', sistema: 'xp', quantidade: 1, escopo: 'edicao', descricao: '1 XP para o dono quando alguém toca a campainha ou curte a casa (até 20 por dia)' },
   { id: 'xp20_vizinho@1', sistema: 'xp', quantidade: 20, escopo: 'edicao', descricao: '20 XP quando alguém entra na sua rua pelo seu link de vizinho' },
   { id: 'xp50_tesouro@1', sistema: 'xp', quantidade: 50, escopo: 'edicao', descricao: '50 XP para quem acha o baú da semana primeiro' },
   { id: 'xp20_tesouro@1', sistema: 'xp', quantidade: 20, escopo: 'edicao', descricao: '20 XP para quem acha o baú da semana depois do primeiro' },

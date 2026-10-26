@@ -18,16 +18,19 @@ import { painelLojas, painelNegocio } from './painel-lojas-neg';
 import { compartilharCartao } from './cartao-story';
 import { montarHub } from './painel-hub';
 import { montarJornal } from './jornal';
+import { abrirStory } from './story';
+import { montarPainelApp } from './painel-app';
 
 export type Paineis = { abrir(id: string, opts?: any): void; fechar(id?: string): void; fecharTopo(): boolean; ativo(): string | null };
 type Def = { titulo: string; desenhar(corpo: HTMLElement, opts: any): void | Promise<void>; ajuda?: boolean };
 
-const TABS: { id: string; rot: string; ic: string; central?: boolean }[] = [
-  { id: 'casa', rot: 'Minha Casa', ic: 'casa' },
-  { id: 'minha', rot: 'Minha cidade', ic: 'cidade' },
-  { id: 'eleicoes', rot: 'Eleições', ic: 'urna', central: true },
-  { id: 'ranking', rot: 'Ranking', ic: 'ranking' },
-  { id: 'lojas', rot: 'Lojas', ic: 'loja' },
+const TABS: { id: string; rot: string; ic: string }[] = [
+  { id: 'ranking', rot: 'placar', ic: 'trofeu' },
+  { id: 'eleicoes', rot: 'palácio', ic: 'palacio' },
+  { id: 'lojas', rot: 'lojas', ic: 'loja' },
+  { id: 'casa', rot: 'minha casa', ic: 'casa' },
+  { id: 'como', rot: 'como funciona', ic: 'ajuda' },
+  { id: 'app', rot: 'app', ic: 'app' },
 ];
 
 export function montarPaineis(ctx: Ctx): Paineis {
@@ -36,9 +39,10 @@ export function montarPaineis(ctx: Ctx): Paineis {
   let descarte: { dispose(): void } | null = null;
 
   const DEFS: Record<string, Def> = {
-    casa: { titulo: 'Minha Casa', desenhar: (c) => minhaCasa(c) },
-    eleicoes: { titulo: 'Eleições', desenhar: (c, o) => eleicoes(c, o) },
-    ranking: { titulo: 'Ranking', desenhar: (c, o) => ranking(c, o), ajuda: true },
+    casa: { titulo: 'minha casa', desenhar: (c) => minhaCasa(c) },
+    eleicoes: { titulo: 'palácio', desenhar: (c, o) => eleicoes(c, o) },
+    ranking: { titulo: 'placar', desenhar: (c, o) => ranking(c, o) },
+    app: { titulo: 'app', desenhar: (c) => montarPainelApp(c) },
     lojas: { titulo: 'lojas', desenhar: (c) => painelLojas(c, ctx, () => fechar()) },
     como: { titulo: 'como funciona', desenhar: (c) => como(c) },
     negocio: { titulo: 'seu negócio no mapa', desenhar: (c, o) => painelNegocio(c, o, secoes.get('negocio')!.querySelector('h1') as HTMLElement) },
@@ -60,8 +64,8 @@ export function montarPaineis(ctx: Ctx): Paineis {
 
   /* explicação em 3 passos no topo dos sistemas que confundem */
   const EXPLICA: Record<string, { tit: string; passos: [string, string][] }> = {
+    casa: { tit: 'como funciona a sua casa', passos: [['💬', 'comentou a cidade num post do @viraruajogo: a casa nasce no mapa'], ['⭐', 'missões, trabalho, amigos marcados e visitas dão XP: a casa sobe de nível e nunca encolhe'], ['🔔', 'quem visita toca a sua campainha e curte: +1 pra você cada']] },
     ruas: { tit: 'como funciona a sua rua', passos: [['🏠', 'toda casa fica numa rua da cidade (até 24 casas por rua)'], ['🤝', 'chame amigos com o convite: eles viram seus vizinhos e aparecem online na rua'], ['🏆', 'a rua faz missões juntas, constrói a obra e disputa o troféu da semana']] },
-    eleicoes: { tit: 'como funciona a eleição virtual', passos: [['✋', 'seg a qui: quem quiser se candidata (líder da rua, prefeito ou presidente)'], ['🗳️', 'sex a dom: cada morador vota 1 vez por cargo; pode trocar até fechar'], ['👑', 'dom 21h: quem tiver mais votos assume a semana seguinte e escolhe obras e festas']] },
     pet: { tit: 'como ganhar o seu pet', passos: [['⭐', 'junte pontos com missões, trabalho e obra da rua'], ['🔓', 'chegou na meta: escolha gato ou cachorro, a cor e o nome'], ['🏠', 'ele fica na frente da sua casa no mapa e todo mundo vê']] },
     avatar: { tit: 'o seu avatar', passos: [['🎨', 'escolha pele, cabelo, roupa, cores e acessório'], ['💾', 'salve: ele aparece na frente da sua casa no mapa'], ['👋', 'quando você entra, seus vizinhos te veem online e podem acenar']] },
   };
@@ -69,30 +73,25 @@ export function montarPaineis(ctx: Ctx): Paineis {
     const e = EXPLICA[id]; if (!e) return;
     const b = el('div', 'cartao-b expl'); b.append(el('h2', '', e.tit));
     for (const [ic, t] of e.passos) { const l = el('div', 'expl-p'); l.append(el('span', 'expl-ic', ic), el('span', '', t)); b.append(l); }
+    if (id === 'casa') b.append(botao('btn mini', '▶ ver o passo a passo', () => { fechar(); abrirStory(ctx, 1); }));
     c.append(b);
   }
 
   /* ---------- barra ---------- */
   const tab = $('tabbar');
   for (const t of TABS) {
-    const b = botao('tab' + (t.central ? ' central' : ''), '', () => clicarTab(t.id), t.rot);
+    const b = botao('tab', '', () => clicarTab(t.id), t.rot);
     b.dataset.tab = t.id;
     const ic = el('span', 'ico'); ic.innerHTML = ICONES[t.ic]; b.append(ic, el('span', '', t.rot));
     if (t.id === 'lojas' && D.lojas.length) b.append(el('i', 'selo'));
     tab.append(b);
   }
-  function pintarTabs() { tab.querySelectorAll<HTMLElement>('.tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === aberto || (b.dataset.tab === 'minha' && aberto === null && ctx.sel?.tipo === 'cid' && ctx.sel.c === cidadeEu()))); }
-  function cidadeEu(): Cidade | null { const gi = ctx.eu(); return gi >= 0 ? dados.CID[dados.CID_DE[gi]] : null; }
+  function pintarTabs() { tab.querySelectorAll<HTMLElement>('.tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === aberto || (b.dataset.tab === 'casa' && aberto === null && ctx.sel?.tipo === 'casa' && ctx.sel.gi === ctx.eu()))); }
   function clicarTab(id: string) {
     if (aberto === id) { fechar(); return; }
-    if (id === 'minha') {
-      fechar(); const c = cidadeEu();
-      if (!c) { toast('escreva o seu @ na busca para achar a sua casa'); $('q').focus(); return; }
-      ctx.mostrarCidade(c); pintarTabs(); return;
-    }
+    if (id === 'como') { fechar(); abrirStory(ctx); return; }
     abrir(id);
   }
-  $('ajuda').onclick = () => abrir('como');
   $('abrirNegocio').onclick = () => abrir('negocio');
 
   /* ---------- abrir/fechar ---------- */
@@ -160,39 +159,64 @@ export function montarPaineis(ctx: Ctx): Paineis {
     c.append(botao('btn mini', 'trocar @', () => { ctx.esquecerEu(); abrir('casa'); }));
   }
 
-  /* ---------- Eleições (jogo clássico: quem mais pontua na semana manda) ---------- */
+  /* ---------- Palácio: relógio da eleição, quem manda em cada cargo e as eleições virtuais ---------- */
   async function eleicoes(c: HTMLElement, o: { alvo?: number; cargo?: string }) {
-    const fim = proximoFechamento();
-    const topo = el('div', 'cartao-b escuro');
-    topo.append(el('h2', '', 'eleição virtual da semana'), el('p', '', 'cargos do jogo, sem vínculo com eleições reais. A apuração fecha domingo às 21h (Brasília).'));
-    const rel = el('p', 'contagem'); topo.append(rel);
-    const pinta = () => { const ms = Math.max(0, fim - Date.now()); rel.textContent = `fecha em ${Math.floor(ms / 86400000)}d ${String(Math.floor((ms % 86400000) / 3600000)).padStart(2, '0')}h ${String(Math.floor((ms % 3600000) / 60000)).padStart(2, '0')}min`; };
-    pinta(); const t = setInterval(() => (rel.isConnected ? pinta() : clearInterval(t)), 30000);
-    c.append(topo);
+    const fim = proximoFechamento(), SEMANA = 7 * 86400_000;
+    const hero = el('div', 'cartao-b pl-hero');
+    hero.append(el('h2', '', 'eleição toda semana'), el('p', 'pl-sub', 'cargos do jogo, sem vínculo com eleições reais · próxima apuração em'));
+    const big = el('div', 'pl-cont'), bar = el('div', 'pl-barra'), bi = el('i'); bar.append(bi);
+    hero.append(big, el('p', 'pl-quando', 'domingo às 21h (Brasília)'), bar,
+      el('p', 'pl-txt', 'Segunda a quinta: candidaturas. Sexta a domingo: votação, 1 voto por cargo. Domingo às 21h o placar fecha e quem tiver mais votos assume a semana seguinte. Missão, comentário e amigo marcado dão pontos pra campanha.'));
+    const pinta = () => {
+      const ms = Math.max(0, fim - Date.now()), d = Math.floor(ms / 86400_000), h = Math.floor((ms % 86400_000) / 3600_000), m = Math.floor((ms % 3600_000) / 60_000), sg = Math.floor((ms % 60_000) / 1000);
+      big.textContent = `${d ? d + 'd ' : ''}${h}h ${String(m).padStart(2, '0')}min ${String(sg).padStart(2, '0')}s`;
+      bi.style.width = Math.round((1 - ms / SEMANA) * 100) + '%';
+    };
+    pinta(); const t = setInterval(() => (big.isConnected ? pinta() : clearInterval(t)), 1000);
+    if (dados.presidente >= 0) { const g = dados.presidente, cp = dados.CID[dados.CID_DE[g]]; const p = el('p', 'pl-txt'); p.append('Nesta semana, quem lidera o Brasil é ', el('b', '', '@' + dados.USR[g]), ` (${cp.nome} · ${cp.uf}) com ${fmtN(D.pts[g])} pts.`); hero.append(p); }
+    c.append(hero);
 
-    const oficial = el('div'); c.append(oficial); montarPainelEleicoes(oficial, ctx, o?.cargo as any, () => abrir('casa'));
-
-    // placar do jogo clássico por pontos
-    const tabs = el('div', 'seg'); const caixa = el('div');
-    const ordem: (keyof typeof CARGOS)[] = ['P', 'S', 'G', 'D', 'M', 'V'];
-    const desenharCargo = (k: keyof typeof CARGOS) => {
-      tabs.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
-      caixa.innerHTML = '';
-      const lista: number[] = []; for (let g = 0; g < D.n; g++) if (D.cg[g] === k) lista.push(g);
-      lista.sort((a, b) => D.pts[b] - D.pts[a]);
+    // quem manda: grade de cargos + detalhe do escolhido
+    const ICO: Record<string, string> = { P: '👑', G: '🏰', S: '⭐', D: '📜', M: '🏛️', V: '🗳️' };
+    const PLURAL: Record<string, string> = { P: 'presidente', G: 'governadores', S: 'senadores', D: 'deputados', M: 'prefeitos', V: 'vereadores' };
+    const porCargo = new Map<string, number[]>(); for (let g = 0; g < D.n; g++) { const k = D.cg[g]; if (k && k !== ' ') { if (!porCargo.has(k)) porCargo.set(k, []); porCargo.get(k)!.push(g); } }
+    const grade = el('div', 'cartao-b pl-cargos'); grade.append(el('h3', 'pl-h3', '☆ quem manda'));
+    const bts = el('div', 'pl-grade'); grade.append(bts);
+    const det = el('div', 'pl-det');
+    const desenhar = (k: string) => {
+      bts.querySelectorAll<HTMLElement>('button').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
+      det.innerHTML = '';
+      const lista = (porCargo.get(k) || []).slice().sort((a, b) => D.pts[b] - D.pts[a]);
+      if (!lista.length) { const v = el('div', 'cartao-b'); v.append(el('h2', '', `nenhum ${CARGOS[k as keyof typeof CARGOS].nome} ainda`), el('p', 'nota', 'a vaga está aberta: candidate-se na eleição virtual aqui embaixo.')); det.append(v); return; }
+      if (k === 'P') {
+        const g = lista[0], cp = dados.CID[dados.CID_DE[g]], v = el('div', 'cartao-b pl-pres');
+        v.append(el('small', 'pl-cargo', '☆ presidente(a) do Brasil'), el('div', 'pl-arroba', '@' + dados.USR[g]), el('p', 'pl-de', `${cp.nome} · ${cp.uf}`));
+        const st = el('div', 'pl-st'); const q2 = (n: string, r: string) => { const d = el('div'); d.append(el('b', '', n), el('small', '', r)); st.append(d); };
+        q2(fmtN(D.pts[g]), 'pts na semana'); q2(fmtN(D.tot[g]), 'XP no total'); v.append(st);
+        const fr = D.frases[dados.USR[g]]; if (fr) v.append(el('p', 'pl-frase', '“' + fr + '”'));
+        v.append(botao('btn prim bloco', 'ver a casa no mapa', () => { fechar(); ctx.mostrarCasa(g); }));
+        det.append(v); return;
+      }
+      const v = el('div', 'cartao-b'); v.append(el('h2', '', `${PLURAL[k]} · ${fmtN(lista.length)}`));
       const max = D.pts[lista[0]] || 1;
-      lista.slice(0, 10).forEach((g, i) => {
+      lista.slice(0, 15).forEach((g, i) => {
         const b = botao('v3-bar', '', () => { fechar(); ctx.mostrarCasa(g); });
         const cid = dados.CID[dados.CID_DE[g]];
-        const bb = el('span', 'b'); bb.append(el('b', '', '@' + dados.USR[g]), el('small', '', `${cid.nome} · ${cid.uf}`)); const bar = el('i'); const s = el('s'); s.style.width = Math.round((D.pts[g] / max) * 100) + '%'; bar.append(s); bb.append(bar);
-        b.append(el('span', 'pos', i + 1), bb, el('span', 'n', fmtN(D.pts[g]) + ' pts')); caixa.append(b);
+        const bb = el('span', 'b'); bb.append(el('b', '', '@' + dados.USR[g]), el('small', '', `${cid.nome} · ${cid.uf}`)); const br = el('i'); const s = el('s'); s.style.width = Math.round((D.pts[g] / max) * 100) + '%'; br.append(s); bb.append(br);
+        b.append(el('span', 'pos', i + 1), bb, el('span', 'n', fmtN(D.pts[g]) + ' pts')); v.append(b);
       });
+      det.append(v);
     };
-    for (const k of ordem) { const b = botao('', CARGOS[k].nome, () => desenharCargo(k)); b.dataset.k = k; tabs.append(b); }
-    const pl = el('div', 'cartao-b'); pl.append(el('h2', '', 'ranking de pontos da semana (não decide cargo)'), tabs, caixa);
-    c.append(pl); desenharCargo('P');
+    for (const k of ['P', 'G', 'S', 'D', 'M', 'V']) {
+      const b = botao('pl-bt', '', () => desenhar(k)); b.dataset.k = k;
+      const n = porCargo.get(k)?.length || 0;
+      b.append(el('span', 'pl-ic', ICO[k]), el('b', '', PLURAL[k]), el('small', '', k === 'P' ? (n ? 'do Brasil' : 'vaga') : n ? fmtN(n) : 'vaga'));
+      bts.append(b);
+    }
+    c.append(grade, det); desenhar('P');
+
+    const oficial = el('div'); c.append(oficial); montarPainelEleicoes(oficial, ctx, o?.cargo as any, () => abrir('casa'));
     if (o?.alvo !== undefined) toast(`para votar em @${dados.USR[o.alvo]}, ele precisa estar inscrito como candidato`, 4000);
-    c.append(el('p', 'contagem', `voto clássico: vale ${VOTO.base} + 1 por hora seguida votando · 1 por hora em cada cargo`));
   }
 
   /* ---------- Ranking ---------- */

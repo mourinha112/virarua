@@ -74,7 +74,7 @@ function atalhos(ctx: Ctx) {
   };
   const hoje = new Date().toISOString().slice(0, 10);
   box.append(fab('te', '🗝️', 'tesouro', 'tesouro', ler('smn_fab_tesouro') !== hoje), fab('gu', '⚔️', 'guerra', 'guerra', ler('smn_fab_guerra') !== hoje));
-  $('app').append(box);
+  $('atalhos').append(box);
 }
 
 /** ?convite=CODIGO: guarda, mostra quem chamou e aceita quando a pessoa já tem casa */

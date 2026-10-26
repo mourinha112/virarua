@@ -23,6 +23,10 @@ export function botaoFechar(onclick: () => void, aria = 'fechar') {
 }
 
 export const ICONES: Record<string, string> = {
+  trofeu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M8.5 20h7M10 17h4v3h-4z"/></svg>',
+  palacio: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9L12 4l8.5 5"/><path d="M4 9.5h16"/><path d="M6 10v7M10 10v7M14 10v7M18 10v7"/><path d="M3.5 20h17M4.5 17.5h15"/></svg>',
+  ajuda: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2 1-1.2 1.8v.4"/><path d="M12 17h.01" stroke-width="3"/></svg>',
+  app: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="2.5"/><path d="M10.5 18h3"/></svg>',
   casa: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6.5L20 11"/><path d="M6 10v9.5h12V10"/><path d="M12 17.2s-2.7-1.6-2.7-3.4a1.5 1.5 0 0 1 2.7-.9 1.5 1.5 0 0 1 2.7.9c0 1.8-2.7 3.4-2.7 3.4z"/></svg>',
   cidade: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20.5h18"/><path d="M5 20.5V11h5v9.5"/><path d="M10 20.5V4.5h6v16"/><path d="M16 20.5V9h3.5v11.5"/><path d="M12.2 8h1.6M12.2 11.5h1.6M12.2 15h1.6M6.8 14h1.4M6.8 17h1.4"/></svg>',
   urna: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="3"/><path d="M8 9V5.5h8V9"/><path d="M9 14.5l2.2 2.2L15.5 12"/></svg>',

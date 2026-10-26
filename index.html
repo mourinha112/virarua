@@ -34,30 +34,46 @@
 
     <header id="topo">
       <h1 class="sr-only">Seu Mundo Novo</h1>
-      <button id="ajuda" type="button" aria-label="como funciona: pontos, casas e cargos"><span aria-hidden="true">?</span></button>
-      <form id="form" role="search" autocomplete="off" novalidate>
-        <label class="campo" for="q">
-          <span class="at" aria-hidden="true">@</span>
-          <input id="q" name="busca" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="search" maxlength="60" placeholder="seu @ ou cidade" aria-label="Busca por @, cidade ou estado" />
-        </label>
-        <button id="ir" type="submit">achar</button>
-      </form>
-      <p class="dica1" id="dica1"></p>
-      <ul id="sug" role="listbox" hidden></ul>
+      <button id="relogio" type="button" aria-label="tempo até a eleição: abrir o palácio"><span class="rl-ic" aria-hidden="true">⏱</span><b id="relogioT">--:--</b><span id="relogioS">pra eleição</span></button>
+      <div id="pres" hidden></div>
     </header>
 
-    <div id="ctrl" role="group" aria-label="Zoom do mapa">
-      <button id="zmais" type="button" aria-label="aproximar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
-      <button id="zmenos" type="button" aria-label="afastar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
-      <button id="zbr" type="button" aria-label="Brasil inteiro"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div id="ctrl" role="group" aria-label="Controles do mapa">
+      <button id="zbus" type="button" aria-label="apontar pro norte"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.5l2.6 6.5h-5.2z" fill="currentColor"/><path d="M12 18.5l-2.6-6.5h5.2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <button id="zmais" type="button" aria-label="aproximar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <button id="zmenos" type="button" aria-label="afastar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h12" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <button id="zinc" type="button" aria-label="inclinar a câmera"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10l3 10H4z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></button>
+      <button id="zbr" type="button" aria-label="Brasil inteiro"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button>
+      <button id="znoite" type="button" aria-label="dia ou noite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></button>
+      <button id="zeu" type="button" aria-label="ir pra minha casa"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
     </div>
 
     <section id="cartao" hidden aria-live="polite" aria-label="Detalhes"></section>
 
     <footer id="rodape">
-      <p class="totais" id="totais" role="status"></p>
-      <button class="negbtn" id="abrirNegocio" type="button" aria-label="colocar meu negócio no mapa">seu negócio no mapa</button>
-      <p class="rod-links"><a class="priv" href="/privacidade.html">privacidade</a><span aria-hidden="true">·</span><a id="segRodape" href="#" target="_blank" rel="noopener">seguir no Instagram</a></p>
+      <div id="atalhos"></div>
+      <div class="rd-linha">
+        <div id="hora" role="status"><b id="horaT">--:--</b><small><i aria-hidden="true"></i><span id="online">… online</span></small></div>
+        <form id="form" role="search" autocomplete="off" novalidate>
+          <label class="campo" for="q">
+            <input id="q" name="busca" type="text" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="search" maxlength="60" placeholder="@ ou cidade" aria-label="Busca por @, cidade ou estado" />
+          </label>
+          <button id="ir" type="submit">achar</button>
+        </form>
+        <button class="negbtn" id="abrirNegocio" type="button" aria-label="colocar meu negócio no mapa"><span aria-hidden="true">🏪</span> divulgue seu negócio</button>
+        <ul id="sug" role="listbox" hidden></ul>
+      </div>
+      <div id="folha" class="fechada">
+        <button id="folhaBt" type="button" aria-expanded="false"><span>Comente sua cidade e ganhe uma casa no mapa do Brasil.</span><b>ver <i aria-hidden="true">▲</i></b></button>
+        <div id="folhaC">
+          <h2>Comente sua cidade e ganhe uma casa no mapa do Brasil.</h2>
+          <p class="totais" id="totais"></p>
+          <p class="fl-txt">Aproxime o mapa para ver as casinhas, as lojas e as prefeituras. Digite seu @ para achar a sua. Ainda não tem? Comenta o nome da sua cidade no <a id="segRodape" href="#" target="_blank" rel="noopener">último post do @viraruajogo</a> e ela aparece aqui.</p>
+          <a class="btn prim" id="comentarBt" href="#" target="_blank" rel="noopener">comentar minha cidade no post</a>
+          <button class="btn" id="ajuda" type="button">▶ como funciona</button>
+          <p class="rod-links"><a class="priv" href="/privacidade.html">privacidade</a></p>
+        </div>
+      </div>
     </footer>
 
     <nav id="tabbar" aria-label="navegação principal"></nav>

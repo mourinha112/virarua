@@ -5,6 +5,7 @@ import { fmtN, MUNICIPIOS } from '../dados/dados';
 import { CARGOS, NIVEIS, CORES_PAREDE, CORES_TELHADO, proximoFechamento } from '../jogo/regras';
 import { el, botao, botaoFechar, toast, ICONES } from './dom';
 import { COMO_GANHAR } from './painel-pontos';
+import { visitaApi, type CasaSocial } from '../api/crescimento';
 
 const nomeCargo = (l: string | null, c?: Cidade) => {
   if (!l) return '';
@@ -57,9 +58,9 @@ export function cartaoCasa(ctx: Ctx, gi: number) {
 
   const fr = D.frases[h]; if (fr) { const f = el('p', 'msg'); f.append(el('b', '', '“' + fr + '”')); cart.append(f); }
 
-  // ações
+  cart.append(blocoVisita(ctx, gi));
   const acoes = el('div', 'acoes');
-  acoes.append(botao('btn prim bloco', 'votar na eleição da semana', () => ctx.paineis.abrir('eleicoes', { alvo: gi })));
+  acoes.append(botao('btn bloco', '🗳️ votar na eleição da semana', () => ctx.paineis.abrir('eleicoes', { alvo: gi })));
   cart.append(acoes);
 
   // nível e próximo
@@ -103,6 +104,56 @@ export function cartaoCasa(ctx: Ctx, gi: number) {
   be.append(botao('btn mini', 'compartilhar', () => compartilhar(`Minha casa no Seu Mundo Novo: @${h}`, location.origin + '/?u=' + encodeURIComponent(h))));
   cart.append(be);
   return cart;
+}
+
+const ADESIVOS: [string, string][] = [['fogo', '🔥'], ['mao', '👋'], ['coracao', '❤️'], ['estrela', '⭐'], ['festa', '🎉']];
+const precisaEntrar = (e: string) => /login|entre|401/i.test(e);
+
+/** visitar com o bonequinho, tocar a campainha (adesivo) e curtir: +1 pro dono */
+function blocoVisita(ctx: Ctx, gi: number) {
+  const h = ctx.dados.USR[gi], box = el('div', 'vs');
+  const vis = el('section', 'vs-b');
+  vis.append(botao('btn prim bloco vs-ir', '🚶 visitar com meu bonequinho', () => {
+    const f = (window as any).__visitarCom;
+    if (!f || !f(gi)) { toast('entre na sua casa (minha casa) pra visitar com o seu bonequinho', 3500); return; }
+    toast(`você chegou na casa de @${h} 👋`, 3000);
+  }));
+  box.append(vis);
+  const camp = el('section', 'vs-b'), tc = el('p', 'vs-txt'), ads = el('div', 'vs-ads');
+  camp.append(el('h3', '', 'tocar a campainha'), tc, ads);
+  const cur = el('section', 'vs-b'), cc = el('p', 'vs-txt');
+  const bc = botao('btn prim bloco', 'curtir · +1', () => void curtir());
+  const hc = el('h3'); hc.append(el('span', 'vs-cor', '♡'), ` curtir @${h}`);
+  cur.append(hc, cc, bc);
+  box.append(camp, cur);
+  let st: CasaSocial | null = null;
+  const pinta = () => {
+    if (!st) return;
+    const minha = st.casa.minha;
+    tc.textContent = minha ? `sua campainha tocou ${st.campainhaHoje} ${st.campainhaHoje === 1 ? 'vez' : 'vezes'} hoje · ${st.campainhaTotal} no total` : st.eu.tocouHoje ? `você já tocou hoje · ${st.campainhaHoje} ${st.campainhaHoje === 1 ? 'visita' : 'visitas'} hoje. Volta amanhã!` : `Deixe um adesivo na porta e dê +1 pra @${h}. ${st.campainhaHoje} ${st.campainhaHoje === 1 ? 'visita' : 'visitas'} hoje.`;
+    ads.innerHTML = '';
+    for (const [id, ic] of ADESIVOS) {
+      const b = botao('vs-ad', '', () => void tocar(id), 'adesivo ' + id); b.append(el('span', '', ic));
+      const n = st.adesivos[id]; if (n) b.append(el('small', '', String(n)));
+      b.disabled = minha || st.eu.tocouHoje; ads.append(b);
+    }
+    cc.textContent = minha ? `${st.curtidas} ${st.curtidas === 1 ? 'pessoa curtiu' : 'pessoas curtiram'} a sua casa.` : `+1 pra casa de @${h}. Cada casa você curte uma vez só. ${st.curtidas} ${st.curtidas === 1 ? 'curtida' : 'curtidas'}.`;
+    bc.textContent = st.eu.curtiu ? '♥ curtido' : 'curtir · +1'; (bc as HTMLButtonElement).disabled = minha || st.eu.curtiu;
+    vis.hidden = minha;
+  };
+  async function tocar(id: string) {
+    const r = await visitaApi.campainha(h, id);
+    if (!r.ok) { toast(precisaEntrar(r.erro) ? 'entre na sua casa (minha casa) pra tocar a campainha' : r.erro, 3500); return; }
+    st = r; pinta(); toast(`ding-dong! ${ADESIVOS.find((a) => a[0] === id)?.[1]} deixado na porta de @${h}`);
+  }
+  async function curtir() {
+    const r = await visitaApi.curtir(h);
+    if (!r.ok) { toast(precisaEntrar(r.erro) ? 'entre na sua casa (minha casa) pra curtir' : r.erro, 3500); return; }
+    st = r; pinta(); toast(`você curtiu @${h} ♥`);
+  }
+  camp.hidden = cur.hidden = true;
+  void visitaApi.estado(h).then((r) => { if (!r.ok) return; st = r; camp.hidden = cur.hidden = false; pinta(); });
+  return box;
 }
 
 export async function compartilhar(texto: string, url: string) {

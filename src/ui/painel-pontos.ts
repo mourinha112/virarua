@@ -15,9 +15,10 @@ export const COMO_GANHAR: [string, string, string][] = [
   ['🔥', 'ofensiva: 3, 7 e 30 dias seguidos de missão', '+10 / +20 / +50'],
   ['🗝️', 'achar o baú da caça ao tesouro', '+50 (1º) ou +20'],
   ['🏪', 'marcar o @ de uma loja do mapa num comentário do jogo', '+10 XP, 1 vez por loja'],
+  ['🔔', 'alguém toca a sua campainha ou curte a sua casa', '+1 XP cada (até 20 por dia)'],
   ['🎉', 'eventos da cidade e da semana', 'varia'],
 ];
-const FONTE: Record<string, string> = { missao: '✅ missões', trabalho: '💼 trabalho', comentario: '💬 comentários', amigo: '🤝 amigos', loja: '🏪 lojas marcadas', marcar: '📣 amigos marcados', tesouro: '🗝️ tesouro', ofensiva: '🔥 ofensiva', convite: '📨 vizinhos chamados', evento: '🎉 eventos', obra: '🏗️ obra', competicao: '🏆 competição' };
+const FONTE: Record<string, string> = { missao: '✅ missões', trabalho: '💼 trabalho', comentario: '💬 comentários', amigo: '🤝 amigos', loja: '🏪 lojas marcadas', marcar: '📣 amigos marcados', tesouro: '🗝️ tesouro', ofensiva: '🔥 ofensiva', convite: '📨 vizinhos chamados', visita: '🔔 visitas na casa', evento: '🎉 eventos', obra: '🏗️ obra', competicao: '🏆 competição' };
 
 function rotulo(x: ExtratoUI) {
   if (x.regra_id.startsWith('xp5_comentario')) return '💬 comentou num post do jogo';
