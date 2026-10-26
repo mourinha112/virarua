@@ -21,15 +21,18 @@ export async function pacoteDoBanco() {
   const rows = await q<any>(
     `select h.id, h.config, p.ibge, p.lote_index, coalesce(ei.username, '') handle,
             coalesce(sum(r.quantidade) filter (where r.sistema = 'xp' and r.criado_em >= $1), 0)::int pts,
-            coalesce(sum(r.quantidade) filter (where r.sistema = 'xp'), 0)::int tot
+            coalesce(sum(r.quantidade) filter (where r.sistema = 'xp'), 0)::int tot,
+            (select case when bool_or(ot.cargo = 'presidente') then 'P' when bool_or(ot.cargo = 'prefeito') then 'M' end
+               from office_terms ot where ot.user_id = h.dono_user_id and ot.estado = 'ativo' and now() between ot.inicio and ot.fim) eleito
        from houses h
        join plots p on p.id = h.plot_id
        left join external_identities ei on ei.id = h.dono_identity_id and ei.revogado_em is null
        left join reward_ledger r on r.user_id = h.dono_user_id and h.dono_user_id is not null
       where h.status in ('reivindicada', 'reservada')
       group by h.id, p.ibge, p.lote_index, ei.username`, [ini]);
-  const mor: Morador[] = rows.filter((r) => r.handle).map((r) => ({ h: r.handle, ibge: r.ibge, pts: r.pts, tot: r.tot, cor: corDe(r.id, r.config), entrada: r.lote_index }));
-  return montarPacote(mor, false, {}, await lojasParaMapa());
+  const mor: Morador[] = rows.filter((r) => r.handle).map((r) => ({ h: r.handle, ibge: r.ibge, pts: r.pts, tot: r.tot, cor: corDe(r.id, r.config), entrada: r.lote_index, eleito: r.eleito || undefined }));
+  // presidente e prefeito do mapa = mandato da eleição virtual (sem voto não tem palácio)
+  return montarPacote(mor, false, {}, await lojasParaMapa(), true);
 }
 
 export function registrarPacote(app: App) {

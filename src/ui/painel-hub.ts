@@ -5,6 +5,7 @@ import type { Ctx } from './app';
 import { el, botao, toast } from './dom';
 import { criarPreviaAvatar, PADRAO } from '../mundo/avatares3d';
 import { compartilharCartao } from './cartao-story';
+import { NIVEIS, nivelDe } from '../jogo/regras';
 
 function csrf() { const m = document.cookie.match(/(?:^|; )smn_csrf=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
 async function api(metodo: string, url: string, corpo?: unknown): Promise<any> {
@@ -14,7 +15,6 @@ async function api(metodo: string, url: string, corpo?: unknown): Promise<any> {
 const secao = (tit: string, cls = '') => { const s = el('section', 'cartao-b hub ' + cls); s.append(el('h2', '', tit)); return s; };
 const linha = (rot: string, val: string | HTMLElement) => { const l = el('div', 'linha'); l.append(el('span', '', rot), typeof val === 'string' ? el('b', '', val) : val); return l; };
 const barra = (f: number) => { const b = el('div', 'barra'); const i = el('i'); i.style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + '%'; b.append(i); return b; };
-const XP_NIVEL = (n: number) => Math.round((10 * Math.pow(n, 1.85)) / 5) * 5; // mesma curva de src/jogo/regras.ts
 
 export async function montarHub(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?: any) => void, fechar: () => void, eu: any) {
   const cs = eu.casa, rua = eu.rua;
@@ -26,10 +26,11 @@ export async function montarHub(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?
   const cv = el('canvas', 'hub-av'); topo.append(cv);
   const info = el('div', 'hub-info');
   info.append(el('b', 'hub-nome', '@' + (eu.usuario?.usuario_instagram || eu.usuario?.nome_publico || 'você')), el('span', '', `${cs.cidade.nome} · ${cs.cidade.uf}${rua ? ' · ' + rua.nome : ''}`));
-  const xp = rec.ok ? rec.resumo.xp_total + (cs.xp || 0) : cs.xp || 0;
-  const nv = cs.nivel || 1, prox = XP_NIVEL(nv);
+  // houses.xp é espelho do ledger (não somar os dois); nível = mesma regra do mapa (nivelDe)
+  const xp = rec.ok ? rec.resumo.xp_total : cs.xp || 0;
+  const nv = nivelDe(xp), prox = NIVEIS[nv]?.min ?? xp;
   info.append(el('span', 'hub-pts', `⭐ ${xp.toLocaleString('pt-BR')} pontos no total${rec.ok ? ` · +${rec.resumo.xp_hoje} hoje (teto ${rec.resumo.teto_xp_dia})` : ''}`));
-  info.append(el('span', 'hub-nv', `casa nível ${nv}`), barra(xp / Math.max(1, prox)), el('small', 'nota', `${xp} de ${prox} XP para a casa subir de nível`));
+  info.append(el('span', 'hub-nv', `casa nível ${nv} · ${NIVEIS[nv - 1].nome}`), barra(xp / Math.max(1, prox)), el('small', 'nota', NIVEIS[nv] ? `${xp} de ${prox} XP para virar ${NIVEIS[nv].nome}` : 'nível máximo'));
   topo.append(info); s1.append(topo);
   setTimeout(() => { try { criarPreviaAvatar(cv, { ...PADRAO, ...(eu.avatar?.config || {}) } as any); } catch { cv.remove(); } }, 30);
   const b1 = el('div', 'hub-bts');

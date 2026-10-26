@@ -36,7 +36,7 @@ export async function montarJornal(c: HTMLElement, ctx: Ctx, abrir: (id: string,
   if (c1) materia('manchete', `${c1.nome} lidera o Brasil virtual nesta semana`, `com ${fmtN(c1.pts)} pontos somados por ${fmtN(c1.n)} moradores, ${c1.nome} (${c1.uf}) está no topo. Logo atrás vêm ${top[1]?.nome} e ${top[2]?.nome}.`, ['ver a cidade', () => { fechar(); ctx.mostrarCidade(c1); }], true);
 
   // eleição clássica da semana (por pontos)
-  if (D.presidente >= 0) { const gi = D.presidente, ci = D.CID[D.CID_DE[gi]]; materia('poder', `@${D.USR[gi]} segue como ${CARGOS.P.nome} da semana`, `morador de ${ci.nome}, soma ${fmtN(P.pts[gi])} pontos. A semana fecha domingo às 21h (Brasília): ainda dá tempo de virar.`, ['ver o ranking', () => abrir('ranking')]); }
+  if (D.presidente >= 0) { const gi = D.presidente, ci = D.CID[D.CID_DE[gi]]; materia('poder', `@${D.USR[gi]} é o ${CARGOS.P.nome} eleito`, `morador de ${ci.nome}, venceu a eleição virtual no voto. Quer o cargo? Candidate-se nas inscrições de segunda a quinta.`, ['ver as eleições', () => abrir('eleicoes')]); }
 
   // sua rua e a eleição da rua (conta logada)
   const [rv, el1, emps] = await Promise.all([get('/rua-viva'), get('/eleicoes'), get('/empresas/mapa')]);

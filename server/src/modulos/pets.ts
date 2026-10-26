@@ -1,5 +1,5 @@
 /* Pet da casa: gato ou cachorro na frente da casa. Um por pessoa, liberado quando os pontos totais
-   (XP das missões + pontos da casa, o mesmo número do perfil) chegam na meta. O servidor confere a meta.
+   (XP do ledger, o mesmo número do perfil e do nível da casa no mapa) chegam na meta. O servidor confere a meta.
    Rotas: GET /api/pets/eu (estado + meta), POST /api/pets/eu (adotar/trocar), GET /api/pets?ibge=1,2 (público, para o mapa). */
 import type { App } from '../http/app';
 import { exigirLogin, ErroHttp, limite } from '../http/app';
@@ -12,8 +12,7 @@ type Especie = keyof typeof CORES_PET;
 
 async function pontosDe(userId: string) {
   const r = await q1<{ pts: number; casa: boolean }>(
-    `select (coalesce((select sum(quantidade) from reward_ledger where user_id = $1 and sistema = 'xp'), 0)
-           + coalesce(max(h.xp), 0))::int pts, count(h.id) > 0 casa
+    `select coalesce((select sum(quantidade) from reward_ledger where user_id = $1 and sistema = 'xp'), 0)::int pts, count(h.id) > 0 casa
        from houses h where h.dono_user_id = $1 and h.principal and h.status = 'reivindicada'`, [userId]);
   return { pts: r?.pts ?? 0, casa: !!r?.casa };
 }

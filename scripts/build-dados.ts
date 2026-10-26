@@ -11,7 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 type Mun = [number, string, string, number, number, number, number];
 const MUNS: Mun[] = JSON.parse(readFileSync(resolve(here, '../src/data/municipios.json'), 'utf8'));
 
-export type Morador = { h: string; ibge: number; pts: number; tot: number; cor: number; entrada: number };
+export type Morador = { h: string; ibge: number; pts: number; tot: number; cor: number; entrada: number; eleito?: 'P' | 'M' };
 
 function rng(seed: number) { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
@@ -61,8 +61,12 @@ export function gerarMock(total = 16000, seed = 20261024): Morador[] {
 }
 
 /* ---------------- cargos (jogo clássico: pontos da semana) ---------------- */
-export function calcularCargos(mor: Morador[]): LetraCargo[] {
+/** soEleitos (produção): presidente e prefeito saem SÓ do mandato eleito (Morador.eleito); sem eleito o cargo fica vago.
+    Governador, senador, deputado e vereador continuam pelos pontos da semana. */
+export function calcularCargos(mor: Morador[], soEleitos = false): LetraCargo[] {
   const cg: (LetraCargo | ' ')[] = mor.map(() => ' ');
+  if (soEleitos) mor.forEach((m, i) => { if (m.eleito === 'P') cg[i] = 'P'; });
+  if (soEleitos) { const prefeitos = new Set<number>(); mor.forEach((m, i) => { if (m.eleito === 'M' && cg[i] === ' ' && !prefeitos.has(m.ibge)) { cg[i] = 'M'; prefeitos.add(m.ibge); } }); }
   const ufDe = new Map(MUNS.map((m) => [m[0], m[2]]));
   const popUf = new Map<string, number>(); for (const m of MUNS) popUf.set(m[2], (popUf.get(m[2]) || 0) + m[5]);
   // desempate: mais pontos; depois casa mais antiga (índice menor)
@@ -70,7 +74,7 @@ export function calcularCargos(mor: Morador[]): LetraCargo[] {
   const ordem = mor.map((_, i) => i).filter((i) => mor[i].pts > 0).sort((a, b) => mor[b].pts - mor[a].pts || a - b);
   const livre = (i: number) => cg[i] === ' ';
   // Brasil
-  const br = ordem.filter(livre); if (br[0] !== undefined) cg[br[0]] = 'P'; for (const i of br.slice(1, 50)) cg[i] = 'S';
+  const br = ordem.filter(livre); const p0 = soEleitos ? 0 : 1; if (!soEleitos && br[0] !== undefined) cg[br[0]] = 'P'; for (const i of br.slice(p0, p0 + 49)) cg[i] = 'S';
   // estados
   const porUf = new Map<string, number[]>(); for (const i of ordem) { const uf = ufDe.get(mor[i].ibge)!; (porUf.get(uf) || porUf.set(uf, []).get(uf)!).push(i); }
   for (const [uf, l] of porUf) {
@@ -80,7 +84,7 @@ export function calcularCargos(mor: Morador[]): LetraCargo[] {
   }
   // cidades
   const porCid = new Map<number, number[]>(); for (const i of ordem) (porCid.get(mor[i].ibge) || porCid.set(mor[i].ibge, []).get(mor[i].ibge)!).push(i);
-  for (const l of porCid.values()) { const f = l.filter(livre); if (f[0] !== undefined) cg[f[0]] = 'M'; for (const i of f.slice(1, 21)) cg[i] = 'V'; }
+  for (const l of porCid.values()) { const f = l.filter(livre); const temM = soEleitos; if (!temM && f[0] !== undefined) cg[f[0]] = 'M'; for (const i of f.slice(temM ? 0 : 1, temM ? 20 : 21)) cg[i] = 'V'; }
   return cg as LetraCargo[];
 }
 
@@ -94,9 +98,9 @@ const LOJAS_DEMO: Loja[] = [
   { id: 'acai-tropical', nome: 'Açaí Tropical', tipo: 'acai', ibge: 1501402, cor: '#8338ec', desc: 'Açaiteria de demonstração.', ate: '2026-11-30', patrocinado: true },
 ];
 
-export function montarPacote(mor: Morador[], demo: boolean, frases: Record<string, string> = {}, lojas: Loja[] = []): PacoteMundo {
+export function montarPacote(mor: Morador[], demo: boolean, frases: Record<string, string> = {}, lojas: Loja[] = [], soEleitos = false): PacoteMundo {
   mor.sort((a, b) => a.ibge - b.ibge || a.entrada - b.entrada);
-  const cg = calcularCargos(mor);
+  const cg = calcularCargos(mor, soEleitos);
   const cidades: PacoteMundo['cidades'] = [];
   let i = 0;
   while (i < mor.length) { const ib = mor[i].ibge; let j = i; while (j < mor.length && mor[j].ibge === ib) j++; cidades.push([ib, i, j - i, i]); i = j; }

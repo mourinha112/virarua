@@ -22,7 +22,7 @@ export function montarPerfil(ctx: Ctx) {
     if (eu.ok && eu.casa) {
       const h = eu.usuario?.usuario_instagram || eu.usuario?.nome_publico || 'você';
       const rec = await api.recompensas().catch(() => null);
-      const total = (rec?.ok ? rec.resumo.xp_total : 0) + ((eu.casa as any).xp || 0);
+      const total = rec?.ok ? rec.resumo.xp_total : (eu.casa as any).xp || 0;   // houses.xp espelha o ledger: não somar
       ini.textContent = String(h).slice(0, 1).toUpperCase(); nome.textContent = '@' + h; pts.textContent = `⭐ ${fmt.format(total)} pts`;
       b.classList.add('on');
       void avisoEleicao(ctx);

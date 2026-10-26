@@ -11,8 +11,8 @@ import { META_AEROPORTO } from '../mundo/aeroportos';
 const fmt = new Intl.NumberFormat('pt-BR');
 const VILA_ATE = 25, META_PET = 50;
 const CASAS: { nivel: number; ic: string; nome: string }[] = [
-  { nivel: 1, ic: '🏠', nome: 'casinha' }, { nivel: 3, ic: '🏡', nome: 'casa com varanda' }, { nivel: 7, ic: '🏘️', nome: 'sobrado' },
-  { nivel: 12, ic: '🏰', nome: 'mansão' }, { nivel: 20, ic: '🏢', nome: 'prédio' },
+  { nivel: 1, ic: '🏠', nome: 'casinha térrea' }, { nivel: 3, ic: '🏡', nome: 'sobrado' }, { nivel: 7, ic: '🏘️', nome: 'casa alta de laje' },
+  { nivel: 12, ic: '🏢', nome: 'prédio de 5 andares' }, { nivel: 20, ic: '🏙️', nome: 'torre de vidro' },
 ];
 const OBRAS: { ic: string; nome: string; etapas: string }[] = [
   { ic: '🌷', nome: 'Jardim da rua', etapas: 'terra → mudas → flores e cerca' },
@@ -37,7 +37,7 @@ export async function montarPainelConstrucoes(c: HTMLElement, ctx: Ctx, abrir: (
   let pts: number | null = null, ibge: number | null = null, rua: string | null = null;
   if (eu.ok && eu.casa) {
     const rec = await api.recompensas();
-    pts = (rec.ok ? rec.resumo.xp_total : 0) + ((eu.casa as any).xp || 0); ibge = eu.casa.cidade.ibge; rua = eu.rua?.id || null;
+    pts = rec.ok ? rec.resumo.xp_total : (eu.casa as any).xp || 0; ibge = eu.casa.cidade.ibge; rua = eu.rua?.id || null;
   } else { const gi = ctx.eu(); if (gi >= 0) { pts = ctx.dados.p.tot[gi]; ibge = ctx.dados.CID[ctx.dados.CID_DE[gi]].ibge; } }
   st.remove();
   const cid = ibge ? ctx.dados.POR_IBGE.get(ibge) : null;
@@ -45,7 +45,7 @@ export async function montarPainelConstrucoes(c: HTMLElement, ctx: Ctx, abrir: (
   // 1) casa
   const s1 = el('div', 'cartao-b am'); s1.append(el('h2', '', '🏠 sua casa · cresce com os SEUS pontos'));
   s1.append(el('p', 'nota', 'missões, trabalho e ajudar a obra dão pontos. A casa nunca encolhe.'));
-  for (const k of CASAS) s1.append(item(k.ic, k.nome, `nível ${k.nivel} · ${NIVEIS[k.nivel - 1].nome}`, pts, NIVEIS[k.nivel - 1].min));
+  for (const k of CASAS) s1.append(item(k.ic, k.nome, `a partir do nível ${k.nivel}`, pts, NIVEIS[k.nivel - 1].min));
   s1.append(item('👑', 'palácio do presidente', 'só quem vence a eleição de presidente', null, 1));
   c.append(s1);
 
