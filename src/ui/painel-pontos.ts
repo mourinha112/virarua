@@ -9,15 +9,23 @@ export const COMO_GANHAR: [string, string, string][] = [
   ['✅', 'cada missão do dia', '+5 XP (e +10 pra rua)'],
   ['💼', 'trabalhar no dia', '+10 XP'],
   ['💬', 'comentar num post do @viraruajogo', '+5 XP por post, 1 vez por dia'],
-  ['🤝', 'marcar um @amigo que ainda não joga, e ele ganhar a casa', '+50 XP por amigo'],
+  ['📣', 'marcar @amigo num comentário do jogo', '+5 XP por @ (até 3 por dia)'],
+  ['🤝', 'o amigo marcado ganha a casa', '+50 XP por amigo'],
+  ['📨', 'vizinho novo entra pela sua rua com o seu link', '+20 XP'],
+  ['🔥', 'ofensiva: 3, 7 e 30 dias seguidos de missão', '+10 / +20 / +50'],
+  ['🗝️', 'achar o baú da caça ao tesouro', '+50 (1º) ou +20'],
   ['🏪', 'marcar o @ de uma loja do mapa num comentário do jogo', '+10 XP, 1 vez por loja'],
   ['🎉', 'eventos da cidade e da semana', 'varia'],
 ];
-const FONTE: Record<string, string> = { missao: '✅ missões', trabalho: '💼 trabalho', comentario: '💬 comentários', amigo: '🤝 amigos', loja: '🏪 lojas marcadas', evento: '🎉 eventos', obra: '🏗️ obra', competicao: '🏆 competição' };
+const FONTE: Record<string, string> = { missao: '✅ missões', trabalho: '💼 trabalho', comentario: '💬 comentários', amigo: '🤝 amigos', loja: '🏪 lojas marcadas', marcar: '📣 amigos marcados', tesouro: '🗝️ tesouro', ofensiva: '🔥 ofensiva', convite: '📨 vizinhos chamados', evento: '🎉 eventos', obra: '🏗️ obra', competicao: '🏆 competição' };
 
 function rotulo(x: ExtratoUI) {
   if (x.regra_id.startsWith('xp5_comentario')) return '💬 comentou num post do jogo';
   if (x.regra_id.startsWith('xp50_amigo')) return `🤝 @${x.dados?.amigo || 'amigo'} entrou no jogo`;
+  if (x.regra_id.startsWith('xp5_marcar')) return `📣 marcou @${x.dados?.amigo || 'amigo'}`;
+  if (x.origem === 'tesouro') return '🗝️ achou o baú do tesouro';
+  if (x.origem === 'ofensiva') return '🔥 ofensiva de ' + (x.evento_ref.split(':')[1] || '') + ' dias';
+  if (x.origem === 'convite') return '📨 vizinho novo entrou pelo seu link';
   if (x.regra_id.startsWith('xp10_loja')) return `🏪 marcou @${x.evento_ref.replace(/^loja:/, '')}`;
   if (x.evento_ref === 'trabalho') return '💼 trabalhou';
   if (x.origem === 'missao') return '✅ missão ' + (x.evento_ref.split(':')[1] || '');

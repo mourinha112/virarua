@@ -69,7 +69,7 @@ export function registrar(app: App) {
   app.get('/api/pontos/eu', async (c) => {
     const u = exigirLogin(c);
     const fontes = (await db().query(
-      `select case when regra_id like 'xp5_comentario%' then 'comentario' when regra_id like 'xp50_amigo%' then 'amigo' when regra_id like 'xp10_loja%' then 'loja'
+      `select case when regra_id like 'xp5_comentario%' then 'comentario' when regra_id like 'xp50_amigo%' then 'amigo' when regra_id like 'xp10_loja%' then 'loja' when regra_id like 'xp5_marcar%' then 'marcar'
                    when evento_ref = 'trabalho' then 'trabalho' else origem end fonte, sum(quantidade)::int xp, count(*)::int vezes
          from reward_ledger where user_id = $1 and sistema = 'xp' group by 1 order by 2 desc`, [u.id])).rows;
     const extrato = (await db().query(

@@ -6,6 +6,7 @@ import { el, botao, toast } from './dom';
 import { criarPreviaAvatar, PADRAO } from '../mundo/avatares3d';
 import { compartilharCartao } from './cartao-story';
 import { NIVEIS, nivelDe } from '../jogo/regras';
+import { compartilharTexto } from './painel-crescimento';
 
 function csrf() { const m = document.cookie.match(/(?:^|; )smn_csrf=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; }
 async function api(metodo: string, url: string, corpo?: unknown): Promise<any> {
@@ -44,6 +45,20 @@ export async function montarHub(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?
   como.append(el('p', 'nota', 'a casa sobe de nível com o XP e nunca desce. Teto de 100 XP por dia para ninguém ganhar no cansaço.'));
   como.append(botao('btn mini', '📊 meus pontos e extrato', () => abrir('pontos')));
   s1.append(como); c.append(s1);
+
+  /* 1a) chame vizinhos + ofensiva + guerra/tesouro */
+  const sv = secao('🔥 ofensiva e vizinhos', 'am'); c.append(sv);
+  void api('GET', '/decor/eu').then((d) => {
+    if (d.ok) { const o = d.ofensiva; sv.append(el('p', '', `🔥 ${o.dias} ${o.dias === 1 ? 'dia' : 'dias'} seguidos de missão${o.hoje ? ' · hoje garantido ✅' : o.dias ? ' · faça 1 missão hoje pra não apagar!' : ''}`)); }
+    const b = el('div', 'hub-bts');
+    if (rua) b.append(botao('btn prim', '📨 meu link de vizinho', async () => {
+      const r = await api('POST', '/convites', { tipo: 'rua', ruaId: rua.id, maxUsos: 24, validadeHoras: 168 });
+      if (!r.ok) { toast(r.erro); return; }
+      void compartilharTexto(`🏠 Vem ser meu vizinho no ViraRua! Entra por esse link e cai na minha rua (${rua.nome}, ${cs.cidade.nome}):`, r.convite.link);
+    }));
+    b.append(botao('btn', '🎨 enfeitar casa', () => abrir('enfeites')), botao('btn', '⚔️ guerra', () => abrir('guerra')), botao('btn', '🗝️ tesouro', () => abrir('tesouro')));
+    sv.append(b, el('p', 'nota', 'quem entra pelo seu link cai na sua rua e você ganha +20 XP por vizinho novo.'));
+  });
 
   /* 1b) pet da casa */
   const sp = secao('meu pet'); c.append(sp);

@@ -125,7 +125,10 @@ describe('fase1 · provisionamento', () => {
 
   it('mídia não habilitada, sem from.id e comentário da própria conta', async () => {
     cliente();
-    expect((await processarComentario(comentario({ fromId: novoId('2400'), text: 'Recife - PE', mediaId: '18000000000000999' }))).estado).toBe('ignored');
+    // padrão: qualquer post da conta vale; com IG_SO_CAMPANHA=1 só os posts habilitados no painel
+    process.env.IG_SO_CAMPANHA = '1';
+    try { expect((await processarComentario(comentario({ fromId: novoId('2400'), text: 'Recife - PE', mediaId: '18000000000000999' }))).estado).toBe('ignored'); }
+    finally { delete process.env.IG_SO_CAMPANHA; }
     await habilitarMidia('18000000000000777', { status: 'pausada' });
     expect((await processarComentario(comentario({ fromId: novoId('2400'), text: 'Recife - PE', mediaId: '18000000000000777' }))).estado).toBe('ignored');
     const sem = await processarComentario(comentario({ fromId: null, username: 'x', text: 'Recife - PE' }));

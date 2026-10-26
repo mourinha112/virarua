@@ -18,7 +18,7 @@ describe('fase 3 · missões e ledger', () => {
     const c = cliente(); c.jar.set('smn_sess', await sessaoTeste(m.userId)); await c.aquecer();
     const lista = await c.get('/api/missoes');
     expect(lista.status).toBe(200);
-    expect(lista.json.missoes.map((x: any) => x.id)).toEqual(['obra.etapa', 'desafio.curto', 'atividade.praca']);
+    expect(lista.json.missoes.map((x: any) => x.id)).toEqual(expect.arrayContaining(['obra.etapa', 'desafio.curto', 'atividade.praca']));
 
     const d = await c.post('/api/missoes/desafio.curto/desafio');
     expect(d.status).toBe(200); expect(d.json.desafio.enunciado.pergunta).toMatch(/quanto é/);

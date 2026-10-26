@@ -20,9 +20,9 @@ function linha(esq: string | HTMLElement, dir?: string | HTMLElement) {
   const l = el('div', 'linha'); l.append(typeof esq === 'string' ? el('span', '', esq) : esq); if (dir !== undefined) l.append(typeof dir === 'string' ? el('b', '', dir) : dir); return l;
 }
 
-const FERRAMENTA: Record<string, string> = { martelo: '🔨 martelo', tijolo: '🧱 tijolo', tinta: '🪣 tinta', serra: '🪚 serra', muda: '🌱 muda', lampada: '💡 lâmpada' };
+const FERRAMENTA: Record<string, string> = { martelo: '🔨 martelo', tijolo: '🧱 tijolo', tinta: '🪣 tinta', serra: '🪚 serra', muda: '🌱 muda', lampada: '💡 lâmpada', arvore: '🎄 árvore', presente: '🎁 presente', estrela: '⭐ estrela', sino: '🔔 sino', vela: '🕯️ vela', biscoito: '🍪 biscoito' };
 const rotulo = (k: string) => FERRAMENTA[k] || EMOTE[k] || k;
-const ICONE: Record<string, string> = { 'obra.etapa': '🧩', 'obra.material': '🚚', 'obra.ferramentas': '🧰', 'desafio.curto': '➗', 'atividade.praca': '💃', 'quiz.brasil': '🇧🇷', 'quiz.jogo': '❓' };
+const ICONE: Record<string, string> = { 'obra.etapa': '🧩', 'obra.material': '🚚', 'obra.ferramentas': '🧰', 'desafio.curto': '➗', 'atividade.praca': '💃', 'quiz.brasil': '🇧🇷', 'quiz.jogo': '❓', 'natal.presente': '🎄' };
 
 export function montarPainelMissoes(corpo: HTMLElement, ctx?: Ctx) {
   corpo.innerHTML = '';
@@ -103,7 +103,9 @@ export function montarPainelMissoes(corpo: HTMLElement, ctx?: Ctx) {
       if (!r.ok) { msg.className = 'msg erro'; msg.textContent = r.erro; return; }
       const xp = r.recompensas.find((x) => x.sistema === 'xp'), rua = r.recompensas.find((x) => x.sistema === 'contribuicao'), ob = (r as any).obra;
       const txtObra = ob?.ok && ob.quantidade ? ` · +${ob.quantidade} na obra 🏗️` : ob && !ob.ok ? ' · ' + ob.motivo : '';
-      toast(r.ja_concluida ? 'essa missão já estava feita hoje' : `+${xp?.quantidade ?? 0} XP${rua?.quantidade ? ` · +${rua.quantidade} pra rua` : ''}${txtObra}`, 3500);
+      const of = (r as any).ofensiva;
+      toast(r.ja_concluida ? 'essa missão já estava feita hoje' : `+${xp?.quantidade ?? 0} XP${rua?.quantidade ? ` · +${rua.quantidade} pra rua` : ''}${txtObra}${of ? ` · 🔥 ofensiva de ${of.dias} dias: +${of.xp} XP!` : ''}`, of ? 5000 : 3500);
+      (window as any).__enfeites3d?.recarregar();
       (window as any).__obras3d?.recarregar(); (window as any).__atualizarPerfil?.();
       void desenhar();
     };

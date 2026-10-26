@@ -9,6 +9,7 @@ import { conceder, resumoUsuario } from './ledger';
 import { contribuirObra, moradia } from './obras';
 import { garantirTemporada } from './competicao';
 import { diaJogo } from './regras';
+import { premiarOfensiva } from './ofensiva';
 
 const ctxMissao = (id: string, dia: string) => `missao:${id}:${dia}`;
 
@@ -17,7 +18,7 @@ export async function missoesDoDia(c: Exec, userId: string, agora = new Date()) 
   const ms = (await c.query(
     `select m.id, m.titulo, m.descricao, m.tipo_desafio, mc.criado_em concluida_em, mc.contribuiu, mc.motivo_sem_ponto
        from missions m left join mission_completions mc on mc.mission_id = m.id and mc.user_id = $1 and mc.dia = $2
-      where m.ativa order by m.ordem`, [userId, dia])).rows;
+      where m.ativa and (m.inicio is null or $2::date between m.inicio and m.fim) order by m.ordem`, [userId, dia])).rows;
   const mor = await moradia(c, userId);
   return {
     dia, morador: !!mor, rua: mor?.streetId ?? null,
@@ -27,7 +28,7 @@ export async function missoesDoDia(c: Exec, userId: string, agora = new Date()) 
 }
 
 async function missaoAtiva(c: Exec, id: string) {
-  const m = (await c.query(`select * from missions where id = $1 and ativa`, [id])).rows[0];
+  const m = (await c.query(`select * from missions where id = $1 and ativa and (inicio is null or (now() at time zone 'America/Sao_Paulo')::date between inicio and fim)`, [id])).rows[0];
   if (!m) throw new ErroHttp(404, 'missão não encontrada');
   return m;
 }
@@ -70,11 +71,12 @@ export async function concluirMissao(c: Exec, userId: string, missionId: string,
     if (contribuicao.quantidade === 0) motivo = 'teto_diario';
   }
   const xp = await conceder(c, { userId, regraId: m.regra_xp, eventoRef: ref, origem: 'missao', agora });
+  const ofensiva = await premiarOfensiva(c, userId, agora);
   await c.query(`update mission_completions set contribuiu = $2, motivo_sem_ponto = $3 where id = $1`, [ins.id, !!contribuicao && contribuicao.quantidade > 0, motivo]);
   await emitir(c, 'missao.concluida', { user_id: userId, mission_id: m.id, dia, ibge: mor.ibge, street_id: mor.streetId }, `missao:${userId}:${m.id}:${dia}`);
   return {
     ja_concluida: false, contribuiu: !!contribuicao && contribuicao.quantidade > 0, motivo_sem_ponto: motivo,
     recompensas: [{ sistema: 'xp', quantidade: xp.quantidade, limitado: xp.limitado }, ...(contribuicao ? [{ sistema: 'contribuicao', quantidade: contribuicao.quantidade, limitado: contribuicao.limitado }] : [])],
-    obra,
+    obra, ofensiva,
   };
 }

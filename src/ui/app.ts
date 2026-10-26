@@ -5,6 +5,8 @@ import { criarRotulos, type Rotulo } from '../mundo/rotulos';
 import { criarCidades3D } from '../mundo/cidades3d';
 import { criarPets } from '../mundo/pets3d';
 import { criarObras } from '../mundo/obras3d';
+import { criarEnfeites } from '../mundo/enfeites3d';
+import { iniciarNovidades } from './novidades';
 import { criarRaios } from '../mundo/raios';
 import { iniciarRuaViva } from './ruaviva';
 import { iniciarJornal } from './jornal';
@@ -78,6 +80,7 @@ export async function iniciarApp(mundo: Mundo) {
   } catch { /* ok */ }
   const pets3d = criarPets(mundo.scene, cid3d); (window as any).__pets3d = pets3d;
   const obras3d = criarObras(mundo.scene, cid3d); (window as any).__obras3d = obras3d;
+  const enfeites3d = criarEnfeites(mundo.scene, cid3d); (window as any).__enfeites3d = enfeites3d;
   const rot = criarRotulos($('camada'));
   // cidades "em alta" (demo: as que mais pontuaram na semana) ganham raio de luz na vista de longe
   const raios = criarRaios([...dados.CID].sort((a, b) => b.pts - a.pts).slice(0, 14).map((c) => ({ x: c.x, y: c.y })));
@@ -255,7 +258,7 @@ export async function iniciarApp(mundo: Mundo) {
   const candCid = dados.ORDEM.slice(0, 600);
   let tick = 0;
   mundo.aoPasso((dt, t) => {
-    cid3d.passo(t); pets3d.passo(t, mundo.camera.dist); obras3d.passo(t, mundo.camera.dist, mundo.camera.cam); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
+    cid3d.passo(t); pets3d.passo(t, mundo.camera.dist); obras3d.passo(t, mundo.camera.dist, mundo.camera.cam); enfeites3d.passo(t, mundo.camera.dist); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
     const D = mundo.camera.dist;
     marc.passo(D, mundo.renderer.getPixelRatio(), innerWidth < 600 && D > 3000 ? 0.85 : 1);
     if ((tick++ & 1) === 1) return;
@@ -344,6 +347,7 @@ export async function iniciarApp(mundo: Mundo) {
   void pollNotif(); setInterval(pollNotif, 30000); (window as any).__pollNotif = pollNotif;
   const ruaViva = iniciarRuaViva(ctx, cid3d);
   iniciarJornal(ctx);
+  iniciarNovidades(ctx);
   (window as any).ctx = ctx; (window as any).__cid3d = cid3d;
   return ctx;
 }

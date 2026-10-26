@@ -153,6 +153,15 @@ function lugares(L: LayoutCidade, lotes: number[], n: number, ocupado: Set<strin
   return out;
 }
 
+/** lugares fixos de cada cidade fora das ruas e dos lotes: [0] prefeitura da vila, [1] árvore de Natal.
+    As obras nunca usam essas células (cache por layout). */
+const extras = new WeakMap<LayoutCidade, { x: number; y: number; yaw: number; chave: string }[]>();
+export function extrasDaCidade(L: LayoutCidade) {
+  let e = extras.get(L);
+  if (!e) { e = lugares(L, L.lotes.map((_, k) => k), 2, new Set()); extras.set(L, e); }
+  return e;
+}
+
 export function criarObras(scene: T.Scene, fonte: Fonte) {
   const raiz = new T.Group(); raiz.name = 'obras'; scene.add(raiz);
   const cache = new Map<number, { em: number; ruas: RuaObras[] }>();
@@ -174,7 +183,7 @@ export function criarObras(scene: T.Scene, fonte: Fonte) {
     const quero = new Set<string>();
     for (const c of fonte.visiveis) {
       const L = fonte.layout(c.ibge); const ruas = cache.get(c.ibge)?.ruas; if (!L || !ruas) continue;
-      const ocupado = new Set<string>();
+      const ocupado = new Set<string>(extrasDaCidade(L).map((x) => x.chave));
       for (const rua of ruas) {
         const pos = lugares(L, rua.lotes, rua.obras.length, ocupado);
         rua.obras.forEach((o, k) => {

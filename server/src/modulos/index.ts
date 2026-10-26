@@ -20,6 +20,7 @@ import { registrarPacote } from './mundo/pacote';
 import { registrarPonteManychat } from './instagram/ponte-manychat';
 import { registrarPets } from './pets';
 import { registrarMetricas } from './metricas';
+import { registrarCrescimento } from './crescimento';
 
 export const MODULOS = { identidade, instagram, mundo, avatares, social, eleicoes, recompensas, eventos, estabelecimentos, conteudo, admin };
-export function registrarModulos(app: App) { for (const m of Object.values(MODULOS)) m.registrar(app); registrarIntegracao(); registrarDev(app); registrarRuaViva(app); registrarTrabalho(app); registrarNotificacoes(app); registrarPacote(app); registrarPonteManychat(app); registrarPets(app); registrarMetricas(app); }
+export function registrarModulos(app: App) { for (const m of Object.values(MODULOS)) m.registrar(app); registrarIntegracao(); registrarDev(app); registrarRuaViva(app); registrarTrabalho(app); registrarNotificacoes(app); registrarPacote(app); registrarPonteManychat(app); registrarPets(app); registrarMetricas(app); registrarCrescimento(app); }

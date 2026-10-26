@@ -2,6 +2,7 @@
    - comentar num post do jogo: +5 XP, 1 por post por dia (só para quem já tem conta);
    - marcar um @amigo no comentário: +50 XP quando esse amigo ganha a casa e confirma.
      Vale só para quem marcou primeiro e só se o amigo ainda não tinha casa quando foi marcado.
+   - marcar @amigo: +5 XP na hora por @ diferente (até 3 por dia);
    - marcar o @ de uma loja patrocinada do mapa no comentário: +10 XP, 1 vez por loja.
    Seguir loja NÃO dá ponto: o Instagram não deixa conferir quem segue uma conta. */
 import type { Tx } from '../../db/db';
@@ -13,6 +14,7 @@ import { lojasParaMapa } from '../estabelecimentos/exportar';
 const CONTA_OFICIAL = 'viraruajogo';
 const RE_MENCAO = /(?:^|[^\w.])@([A-Za-z0-9._]{1,30})/g;
 export const MAX_MENCOES = 5;
+export const MAX_MARCAR_DIA = 3;
 
 /** roda dentro de um savepoint: se os pontos falharem, a casa e o comentário seguem normais */
 export async function isolado(c: Tx, nome: string, f: () => Promise<unknown>) {
@@ -46,6 +48,14 @@ export async function pontosDoComentario(c: Tx, a: { escopo: string; externalId:
   if (a.mediaId) await conceder(c, { userId: u.user_id, regraId: 'xp5_comentario@1', eventoRef: `ig:${a.mediaId}:${diaJogo()}`, origem: 'instagram', dados: { comentario: a.commentId } });
   // @ de loja patrocinada do mapa marcado no comentário: +10 XP, 1 vez por loja
   for (const h of ms) if (lojas.has(h)) await conceder(c, { userId: u.user_id, regraId: 'xp10_loja@1', eventoRef: 'loja:' + h, origem: 'instagram', dados: { comentario: a.commentId } });
+  // marcar @amigo já divulga o jogo: +5 XP por @ diferente, até 3 por dia (os +50 vêm quando ele ganha a casa)
+  const dia = diaJogo();
+  let feitas = (await q1<{ n: number }>(`select count(*)::int n from reward_ledger where user_id = $1 and regra_id = 'xp5_marcar@1' and dia = $2`, [u.user_id, dia], c))!.n;
+  for (const h of ms) {
+    if (lojas.has(h) || feitas >= MAX_MARCAR_DIA) continue;
+    const r = await conceder(c, { userId: u.user_id, regraId: 'xp5_marcar@1', eventoRef: `marca:${dia}:${h}`, origem: 'instagram', dados: { amigo: h } });
+    if (!r.duplicado) feitas++;
+  }
 }
 
 /** chamado quando uma casa é reivindicada: liga o amigo a quem o marcou primeiro e paga o que der */

@@ -232,8 +232,28 @@ export const metricas: Desenhar = async (main) => {
   await desenhar();
 };
 
+/* ---------- divulgar: baú da semana (secreto) com as dicas do dia e ultrapassagens com legenda pronta ---------- */
+function copiar(txt: string) { return botao('btn mini', 'copiar legenda', async (ev) => { try { await navigator.clipboard.writeText(txt); (ev.currentTarget as HTMLButtonElement).textContent = 'copiado ✓'; } catch { window.prompt('copie:', txt); } }); }
+export const divulgar: Desenhar = async (main) => {
+  const r = await get('/divulgar'); main.innerHTML = ''; if (!r.ok) { main.append(erroArea(r)); return; }
+  const hoje = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+  const t = r.tesouro, lt = el('div');
+  for (const d of t.dicas) {
+    const l = el('div', 'linha'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid #0001' + (d.dia === hoje ? ';background:#fff3c4' : '');
+    l.append(el('span', '', `${d.dia.split('-').reverse().slice(0, 2).join('/')}${d.dia === hoje ? ' (HOJE)' : ''} · ${d.texto}`), copiar(d.legenda)); lt.append(l);
+  }
+  main.append(cartao(`🗝️ Caça ao tesouro · semana ${t.semana}`, el('p', '', `🤫 o baú está em ${t.cidade} · ${t.achados} já acharam`), el('p', 'nota', 'poste 1 dica por dia nos stories (a do dia está em amarelo). O jogo libera a mesma dica sozinho.'), lt));
+  const g = r.guerra, le = el('div');
+  if (!g.eventos.length) le.append(el('p', 'nota', 'nenhuma ultrapassagem ainda nesta semana.'));
+  for (const e of g.eventos) { const l = el('div'); l.style.cssText = 'padding:6px 0;border-top:1px solid #0001'; l.append(el('p', '', e.legenda), copiar(e.legenda)); le.append(l); }
+  main.append(cartao('⚔️ Ultrapassagens (posts prontos)', le));
+  main.append(cartao('Top cidades da semana', tabela([['nome', 'cidade'], ['uf', 'UF'], ['pts', 'pontos'], ['casas_novas', 'casas novas'], ['xp', 'XP']], g.top)));
+  main.append(cartao('Estados', tabela([['uf', 'UF'], ['pts', 'pontos'], ['cidades', 'cidades']], g.estados)));
+};
+
 export const AREAS: Record<string, { rot: string; f: Desenhar }> = {
   metricas: { rot: 'Métricas', f: metricas },
+  divulgar: { rot: 'Divulgar', f: divulgar },
   saude: { rot: 'Saúde', f: saude }, midias: { rot: 'Mídias', f: midias }, comentarios: { rot: 'Comentários', f: comentarios }, reservas: { rot: 'Reservas', f: reservas },
   denuncias: { rot: 'Denúncias', f: denuncias }, cidades: { rot: 'Cidades/ruas', f: cidades }, patrocinadores: { rot: 'Patrocinadores', f: patrocinadores },
   flags: { rot: 'Flags', f: flags }, fila: { rot: 'Fila', f: fila }, auditoria: { rot: 'Auditoria', f: auditoria },

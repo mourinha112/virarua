@@ -2,6 +2,8 @@
    - 'rua': aceitar = confirmação do dono para mudar a casa de rua (transação de trocarRua). Rua lotada → lista de
      espera e o uso NÃO é consumido. Convite expirado/revogado/esgotado não mexe em nada.
    - 'visita': dá acesso a um destino (casa privada/amigos, rua privada) enquanto o convite valer. */
+import { conceder } from '../recompensas/ledger';
+import { isolado } from '../instagram/indicacoes';
 import { q, q1, emitir, type Exec, type Tx } from '../../db/db';
 import { config } from '../../config';
 import { ErroHttp } from '../../http/app';
@@ -87,6 +89,11 @@ export async function aceitarConvite(c: Tx, userId: string, codigo: unknown): Pr
       await c.query(`update invitations set usos = usos + 1 where id = $1`, [i.id]);
       await c.query(`insert into invitation_uses (invitation_id, user_id) values ($1, $2) on conflict do nothing`, [i.id, userId]);
       await emitir(c, 'convite.usado', { id: i.id, userId, tipo: 'rua' });
+      // link de vizinho: quem chamou ganha +20 XP por pessoa NOVA (conta criada depois do convite) que entrou na rua
+      await isolado(c, 'bonus_vizinho', async () => {
+        const novo = await q1(`select 1 from users u, invitations i where u.id = $1 and i.id = $2 and u.criado_em >= i.criado_em`, [userId, i.id], c);
+        if (novo && i.criado_por !== userId) await conceder(c, { userId: i.criado_por, regraId: 'xp20_vizinho@1', eventoRef: 'vizinho:' + userId, origem: 'convite' });
+      });
     }
     return { tipo: 'rua', troca };
   }

@@ -8,6 +8,10 @@ export function botao(cls: string, txt: string, onclick?: (ev: MouseEvent) => vo
 export const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 let toastT = 0;
+/** um pop-up por vez: espera os outros (.pop-fundo, .nv-fundo) fecharem antes de abrir */
+export function quandoLivre(abrir: () => void) {
+  const t = setInterval(() => { if (!document.querySelector('.pop-fundo, .nv-fundo')) { clearInterval(t); abrir(); } }, 400);
+}
 export function toast(t: string, ms = 2600) {
   const e = $('toast'); e.textContent = t; e.hidden = false;
   clearTimeout(toastT); toastT = window.setTimeout(() => { e.hidden = true; }, ms);

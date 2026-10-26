@@ -11,6 +11,7 @@ import { montarPainelEleicoes } from './painel-eleicoes';
 import { montarPainelPet } from './painel-pet';
 import { montarPainelConstrucoes } from './painel-construcoes';
 import { montarPainelPontos } from './painel-pontos';
+import { montarPainelGuerra, montarPainelTesouro, montarPainelEnfeites } from './painel-crescimento';
 import { montarPainelMissoes } from './painel-missoes';
 import { montarPainelLoja } from './painel-loja';
 import { painelLojas, painelNegocio } from './painel-lojas-neg';
@@ -46,6 +47,9 @@ export function montarPaineis(ctx: Ctx): Paineis {
     avatar: { titulo: 'meu avatar', desenhar: async (c) => { descarte?.dispose(); descarte = await montarPainelAvatar(c, { abrirReivindicar: () => abrir('reivindicar', { gi: ctx.eu() }), aoSalvar: () => { toast('avatar salvo'); (window as any).__carregarEu?.(); } }); } },
     missoes: { titulo: 'missões do dia', desenhar: (c) => montarPainelMissoes(c, ctx) },
     pet: { titulo: 'meu pet', desenhar: (c) => montarPainelPet(c, abrir) },
+    guerra: { titulo: 'guerra de cidades', desenhar: (c) => montarPainelGuerra(c, ctx, fechar) },
+    tesouro: { titulo: 'caça ao tesouro', desenhar: (c) => montarPainelTesouro(c, ctx, abrir) },
+    enfeites: { titulo: 'ofensiva e enfeites', desenhar: (c) => montarPainelEnfeites(c, abrir) },
     pontos: { titulo: 'meus pontos', desenhar: (c) => montarPainelPontos(c, abrir) },
     construcoes: { titulo: 'o que dá pra construir', desenhar: (c) => montarPainelConstrucoes(c, ctx, abrir) },
     videos: { titulo: 'destaques da semana', desenhar: (c) => videos(c) },

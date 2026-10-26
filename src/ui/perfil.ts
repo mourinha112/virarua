@@ -2,7 +2,7 @@
    Aviso de eleição: quando a pessoa logada tem vaga aberta para se candidatar ou votação aberta sem voto,
    mostra um cartão uma vez por eleição e fase (lembrado neste aparelho). */
 import type { Ctx } from './app';
-import { el, botao } from './dom';
+import { el, botao, quandoLivre } from './dom';
 import { api } from '../api/cliente';
 import { eleicoesApi, type EleicaoV } from '../api/eleicoes';
 
@@ -45,7 +45,7 @@ async function avisoEleicao(ctx: Ctx) {
   const concorrer = r.eleicoes.find((e) => e.status === 'inscricoes' && e.turno === 1 && !e.minhaCandidatura);
   const e = votar || concorrer; if (!e) return;
   if (!lembrar(`smn_aviso_elei:${e.id}:${e.status}`)) return;
-  mostrarAviso(ctx, e, !!votar);
+  quandoLivre(() => mostrarAviso(ctx, e, !!votar));
 }
 
 function mostrarAviso(ctx: Ctx, e: EleicaoV, ehVoto: boolean) {
