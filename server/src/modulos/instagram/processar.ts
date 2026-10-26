@@ -92,6 +92,13 @@ export async function processarComentario(m: MudancaComentario): Promise<Resulta
       }
     }
     const textoCidade = codigos.length ? texto.toUpperCase().replace(RE_CODIGO, ' ') : texto;
+    if (desafio) {
+      await enfileirarRespostaPublica(c, { commentId, identityId: null, tipo: 'codigo_ok', handle: username, cidade: null });
+      // no direct: link de uso único que entra direto (vale também para quem já tinha a casa confirmada)
+      const idt = await garantirIdentidade(c, ident);
+      const temCasa = await q1(`select 1 from houses where dono_identity_id = $1 and principal and status in ('reservada','reivindicada')`, [idt.id], c);
+      if (temCasa) await enfileirarPrivateReply(c, idt.id, commentId);
+    }
     if (midia && !midia.aceita_comentario_cidade) return fim(desafio ? 'challenge' : 'ignored', desafio ? 'código de verificação reconhecido' : 'mídia não aceita comentário de cidade');
 
     const res = await resolverCidade(textoCidade, c);
@@ -145,6 +152,10 @@ export async function processarEvento(eventoId: string) {
 
 // ---------- private reply ----------
 const linkReivindicar = (t: string) => `${config.urlPublica.replace(/\/$/, '')}/reivindicar.html?t=${t}`;
+export function textoAcessoLiberado(link: string, cidade: string) {
+  return `✅ Seu acesso ao ViraRua está LIBERADO! Toque no link pra entrar direto na sua casa em ${cidade} `
+    + `(vale ${config.reivindicacao.validadeLinkMin} min, só funciona uma vez, não compartilhe): ${link}`;
+}
 export function textoPrivateReply(link: string, cidade: string) {
   return `Sua casa em ${cidade} está reservada no Seu Mundo Novo! Para confirmar que é você, abra este link de uso único `
     + `(vale ${config.reivindicacao.validadeLinkMin} min, não compartilhe): ${link}`;
@@ -172,9 +183,10 @@ export async function enviarPrivateReply(outboundId: string, tentativa = 1) {
     `select om.id, om.identity_id, om.referencia, om.estado, ic.evento_em from outbound_messages om
        left join instagram_comments ic on ic.comment_id = om.referencia where om.id = $1`, [outboundId]);
   if (!o || o.estado !== 'pendente') return;
-  const casa = await q1<{ id: string; nome: string; uf: string }>(
-    `select h.id, m.nome, m.uf from houses h join plots p on p.id = h.plot_id join municipios m on m.ibge = p.ibge
-      where h.dono_identity_id = $1 and h.principal and h.status = 'reservada'`, [o.identity_id]);
+  // casa reservada: link para confirmar; casa já confirmada (comentou o código para entrar de novo): link de acesso direto
+  const casa = await q1<{ id: string; nome: string; uf: string; status: string }>(
+    `select h.id, m.nome, m.uf, h.status from houses h join plots p on p.id = h.plot_id join municipios m on m.ibge = p.ibge
+      where h.dono_identity_id = $1 and h.principal and h.status in ('reservada','reivindicada')`, [o.identity_id]);
   if (!casa) { await q(`update outbound_messages set estado = 'cancelada', resposta_provedor = $2 where id = $1`, [o.id, JSON.stringify({ motivo: 'casa já reivindicada, expirada ou removida' })]); return; }
   const falhar = async (erro: string, resposta: unknown, claimId?: string) => {
     await tx(async (c) => {
@@ -194,11 +206,12 @@ export async function enviarPrivateReply(outboundId: string, tentativa = 1) {
       [o.identity_id, sha256(token), config.reivindicacao.validadeLinkMin], c))!;
   });
   const cidade = `${casa.nome}-${casa.uf}`;
-  const r = await prov.enviarPrivateReply({ commentId: o.referencia, texto: textoPrivateReply(linkReivindicar(token), cidade) });
+  const texto = casa.status === 'reivindicada' ? textoAcessoLiberado : textoPrivateReply;
+  const r = await prov.enviarPrivateReply({ commentId: o.referencia, texto: texto(linkReivindicar(token), cidade) });
   if (r.ok) {
     await tx(async (c) => {
       await c.query(`update outbound_messages set estado = $2, modo = $3, resposta_provedor = $4, texto_redigido = $5, enviado_em = now() where id = $1`,
-        [o.id, prov.modo === 'dry_run' ? 'dry_run' : 'enviada', prov.modo, JSON.stringify(r.resposta), textoPrivateReply(linkReivindicar('[redigido]'), cidade)]);
+        [o.id, prov.modo === 'dry_run' ? 'dry_run' : 'enviada', prov.modo, JSON.stringify(r.resposta), texto(linkReivindicar('[redigido]'), cidade)]);
       await c.query(`update onboarding set estado = case when estado = any($3) then 'claim_pending' else estado end, entrega = $2, detalhe = null, atualizado_em = now() where identity_id = $1`,
         [o.identity_id, prov.modo === 'dry_run' ? 'dry_run' : 'enviada', ESTADOS_ENTREGA]);
     });

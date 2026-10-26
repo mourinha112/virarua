@@ -12,26 +12,42 @@ export type Vars = { usuario: Usuario | null; sessaoId: string | null };
 export type App = Hono<{ Variables: Vars }>;
 
 const COOKIE_SESSAO = 'smn_sess', COOKIE_CSRF = 'smn_csrf';
+/** o painel admin tem cookie PRÓPRIO (só vai para /api/admin): entrar no admin não derruba a conta de jogador */
+const COOKIE_ADMIN = 'smn_adm', PATH_ADMIN = '/api/admin';
+/** sessão do jogo dura 180 dias e renova sozinha quando a pessoa volta (faltando menos de 150) */
+const DIAS_SESSAO = 180, RENOVAR_ABAIXO_DIAS = 150;
+const DIAS_ADMIN = 1;   // o painel ainda corta em ADMIN_SESSAO_MIN (padrão 2 h)
 /** cookie Secure só quando a requisição chegou por HTTPS (nginx manda X-Forwarded-Proto); em HTTP puro o navegador descartaria o cookie */
 export const seguro = (c: Context) => (c.req.header('x-forwarded-proto') || new URL(c.req.url).protocol.replace(':', '')) === 'https';
 
-export async function criarSessao(c: Context, userId: string) {
-  const token = tokenForte(32);
-  const r = await q1<{ id: string }>(`insert into sessions (user_id, token_hash, expira_em, ua) values ($1, $2, now() + interval '30 days', $3) returning id`, [userId, sha256(token), (c.req.header('user-agent') || '').slice(0, 200)]);
-  setCookie(c, COOKIE_SESSAO, token, { httpOnly: true, secure: seguro(c), sameSite: 'Lax', path: '/', maxAge: 30 * 86400 });
+export async function criarSessao(c: Context, userId: string, opts: { admin?: boolean } = {}) {
+  const token = tokenForte(32), dias = opts.admin ? DIAS_ADMIN : DIAS_SESSAO;
+  const r = await q1<{ id: string }>(`insert into sessions (user_id, token_hash, expira_em, ua) values ($1, $2, now() + make_interval(days => $4), $3) returning id`, [userId, sha256(token), (c.req.header('user-agent') || '').slice(0, 200), dias]);
+  setCookie(c, opts.admin ? COOKIE_ADMIN : COOKIE_SESSAO, token, { httpOnly: true, secure: seguro(c), sameSite: 'Lax', path: opts.admin ? PATH_ADMIN : '/', maxAge: dias * 86400 });
   return r!.id;
 }
-export async function encerrarSessao(c: Context) {
-  const t = getCookie(c, COOKIE_SESSAO); if (t) await q1(`update sessions set revogada_em = now() where token_hash = $1`, [sha256(t)]);
-  deleteCookie(c, COOKIE_SESSAO, { path: '/' });
+export async function encerrarSessao(c: Context, opts: { admin?: boolean } = {}) {
+  const nome = opts.admin ? COOKIE_ADMIN : COOKIE_SESSAO, path = opts.admin ? PATH_ADMIN : '/';
+  const t = getCookie(c, nome); if (t) await q1(`update sessions set revogada_em = now() where token_hash = $1`, [sha256(t)]);
+  deleteCookie(c, nome, { path });
 }
 
 async function sessao(c: Context<{ Variables: Vars }>, next: Next) {
   c.set('usuario', null); c.set('sessaoId', null);
-  const t = getCookie(c, COOKIE_SESSAO);
+  // nas rotas do admin vale o cookie do admin; no resto, o do jogo
+  const adm = c.req.path.startsWith(PATH_ADMIN) ? getCookie(c, COOKIE_ADMIN) : undefined;
+  const t = adm || getCookie(c, COOKIE_SESSAO);
   if (t) {
-    const r = await q1<Usuario & { sid: string }>(`select u.id, u.nome_publico, u.status, u.faixa_etaria, u.verificado_em, s.id sid from sessions s join users u on u.id = s.user_id where s.token_hash = $1 and s.revogada_em is null and s.expira_em > now()`, [sha256(t)]);
-    if (r && r.status === 'ativo') { c.set('usuario', r); c.set('sessaoId', r.sid); }
+    const r = await q1<Usuario & { sid: string; renovar: boolean }>(
+      `select u.id, u.nome_publico, u.status, u.faixa_etaria, u.verificado_em, s.id sid, s.expira_em < now() + make_interval(days => $2) renovar
+         from sessions s join users u on u.id = s.user_id where s.token_hash = $1 and s.revogada_em is null and s.expira_em > now()`, [sha256(t), RENOVAR_ABAIXO_DIAS]);
+    if (r && r.status === 'ativo') {
+      c.set('usuario', r); c.set('sessaoId', r.sid);
+      if (!adm && r.renovar) {
+        await q1(`update sessions set expira_em = now() + make_interval(days => $2) where id = $1`, [r.sid, DIAS_SESSAO]);
+        setCookie(c, COOKIE_SESSAO, t, { httpOnly: true, secure: seguro(c), sameSite: 'Lax', path: '/', maxAge: DIAS_SESSAO * 86400 });
+      }
+    }
   }
   if (!getCookie(c, COOKIE_CSRF)) setCookie(c, COOKIE_CSRF, tokenForte(18), { httpOnly: false, secure: seguro(c), sameSite: 'Lax', path: '/' });
   await next();
@@ -73,7 +89,30 @@ export function criarApp(): App {
   });
   app.get('/api/saude', (c) => c.json({ ok: true, ambiente: config.ambiente }));
   app.get('/api/sessao', (c) => { const u = c.get('usuario'); return c.json({ ok: true, usuario: u ? { id: u.id, nome: u.nome_publico } : null }); });
-  app.post('/api/sair', async (c) => { await encerrarSessao(c); return c.json({ ok: true }); });
+  app.post('/api/sair', async (c) => {
+    const b = await c.req.json().catch(() => ({} as any));
+    if (typeof b.aparelho === 'string') await q1(`update device_tokens set revogado_em = now() where token_hash = $1 and revogado_em is null`, [sha256(b.aparelho)]);
+    await encerrarSessao(c); return c.json({ ok: true });
+  });
+  // "lembrar este aparelho": token guardado no navegador reabre a sessão se o cookie sumir (navegador do Instagram)
+  app.post('/api/sessao/lembrar', limite(20), async (c) => {
+    const u = c.get('usuario'); if (!u) throw new ErroHttp(401, 'entre na sua conta');
+    const token = tokenForte(32);
+    await q1(`update device_tokens set revogado_em = now() where id in (select id from device_tokens where user_id = $1 and revogado_em is null order by criado_em desc offset 9)`, [u.id]);
+    await q1(`insert into device_tokens (user_id, token_hash, expira_em) values ($1, $2, now() + make_interval(days => $3))`, [u.id, sha256(token), DIAS_SESSAO]);
+    return c.json({ ok: true, token });
+  });
+  app.post('/api/sessao/restaurar', limite(20), async (c) => {
+    const b = await c.req.json().catch(() => ({} as any));
+    const t = typeof b.token === 'string' && b.token.length >= 20 && b.token.length <= 100 ? b.token : '';
+    if (!t) throw new ErroHttp(400, 'token inválido');
+    const d = await q1<{ user_id: string }>(
+      `update device_tokens d set usado_em = now(), expira_em = now() + make_interval(days => $2) from users u
+        where d.token_hash = $1 and d.revogado_em is null and d.expira_em > now() and u.id = d.user_id and u.status = 'ativo' returning d.user_id`, [sha256(t), DIAS_SESSAO]);
+    if (!d) throw new ErroHttp(401, 'aparelho não reconhecido: entre de novo pelo código');
+    await criarSessao(c, d.user_id);
+    return c.json({ ok: true });
+  });
   registrarModulos(app);
   return app;
 }

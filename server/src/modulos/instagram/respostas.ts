@@ -8,7 +8,7 @@ import { config } from '../../config';
 import { enfileirar } from '../../jobs/fila';
 import { provedorInstagram } from './provedor';
 
-export type TipoResposta = 'casa_nova' | 'ja_tinha' | 'cidade_nao_achada';
+export type TipoResposta = 'casa_nova' | 'ja_tinha' | 'cidade_nao_achada' | 'codigo_ok';
 
 const url = () => config.urlPublica.replace(/\/+$/, '');
 const site = () => url().replace(/^https?:\/\//, '');
@@ -16,6 +16,7 @@ const arroba = (h: string | null) => (h ? '@' + h + ' ' : '');
 
 export function textoPublico(tipo: TipoResposta, handle: string | null, cidade: string | null) {
   if (tipo === 'casa_nova') return `${arroba(handle)}🏠 pronto! Sua casa em ${cidade} foi criada no mapa do Brasil. Te mandei o link no direct pra confirmar que é você. Não chegou? Entra em ${site()}/reivindicar.html`;
+  if (tipo === 'codigo_ok') return `${arroba(handle)}✅ Pronto, seu acesso está LIBERADO! 1️⃣ Volte no site onde você gerou o código 2️⃣ Ele entra sozinho em alguns segundos (ou toque em "já comentei, conferir") 3️⃣ Sua casa abre no mapa 🏠 Também te mandei no direct um link que entra direto.`;
   if (tipo === 'ja_tinha') return `${arroba(handle)}🏠 você já tem casa em ${cidade}! Veja no mapa: ${site()}`;
   return `${arroba(handle)}não achei essa cidade 😅 Comenta de novo assim: Duque de Caxias - RJ`;
 }

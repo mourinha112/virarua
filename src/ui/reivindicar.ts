@@ -46,6 +46,13 @@ function camposConfirmacao(box: HTMLElement) {
   return () => ({ nome_publico: inp.value.trim(), aceite_regras: cb.checked });
 }
 
+/** quem JÁ tem casa confirmada não preenche nada de novo: entra direto e vai para o mapa */
+function entrarDeVolta(cidade: string | null, enviar: () => Promise<boolean>) {
+  const m = msg(); m.className = 'msg'; m.textContent = 'entrando…';
+  trocar(cartao('bem-vindo de volta! 🏠', el('p', '', `Acesso liberado${cidade ? ` · sua casa em ${cidade}` : ''}.`), m));
+  void enviar().then((ok) => { if (ok) location.href = '/'; else erro(m, 'não deu para entrar agora: gere outro código.'); });
+}
+
 function sucesso(cidade?: string | null) {
   trocar(cartao('a casa é sua!', el('p', '', `Pronto${cidade ? `: sua casa em ${cidade} está confirmada` : ''}. Agora você pode personalizar o avatar e a casa.`),
     Object.assign(el('a', 'btn prim bloco', 'abrir o mapa'), { href: '/' })));
@@ -59,6 +66,10 @@ async function fluxoLink(t: string) {
     box.append(botao('btn prim bloco', 'confirmar com código de verificação', () => fluxoDesafio()));
     trocar(box); return;
   }
+  if (j.status_casa === 'reivindicada') return entrarDeVolta(`${j.cidade} - ${j.uf}`, async () => {
+    const r = await api('POST', '/reivindicacao/confirmar', { t, nome_publico: j.usuario_instagram || 'jogador', aceite_regras: true });
+    return r.status === 200 && !!r.j.ok;
+  });
   const box = cartao('confirmar a sua casa', el('p', '', 'Esta casa foi reservada para a conta que comentou a cidade no perfil oficial. Confirme para ficar com ela.'));
   const dados = el('div', 'bloco');
   dados.append(linha('cidade', `${j.cidade} - ${j.uf}`));
@@ -136,6 +147,10 @@ function mostrarCodigo(codigo: string, validadeMin: number) {
 }
 
 function confirmarDesafio(j: J) {
+  if (j.status_casa === 'reivindicada') return entrarDeVolta(j.cidade ? `${j.cidade} - ${j.uf}` : null, async () => {
+    const r = await api('POST', '/reivindicacao/desafio/status', { nome_publico: j.usuario_instagram || 'jogador', aceite_regras: true });
+    return !!(r.j.ok && r.j.estado === 'concluido');
+  });
   const box = cartao('é você?');
   const dados = el('div', 'bloco');
   if (j.usuario_instagram) dados.append(linha('Instagram', '@' + j.usuario_instagram));

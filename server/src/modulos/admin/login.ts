@@ -32,9 +32,9 @@ export function registrarLoginAdmin(app: App) {
       await auditar(t, r && ok ? r.user_id : null, ok ? 'admin.login' : 'admin.login_falhou', 'login:' + login, 'login do painel', { ip: c.req.header('x-real-ip') || '' });
     });
     if (!r || !ok) throw new ErroHttp(401, 'usuário ou senha incorretos');
-    await encerrarSessao(c);
-    await criarSessao(c, r.user_id);
+    await encerrarSessao(c, { admin: true });
+    await criarSessao(c, r.user_id, { admin: true });
     return c.json({ ok: true });
   });
-  app.post('/api/admin/sair', async (c) => { await encerrarSessao(c); return c.json({ ok: true }); });
+  app.post('/api/admin/sair', async (c) => { await encerrarSessao(c, { admin: true }); return c.json({ ok: true }); });
 }

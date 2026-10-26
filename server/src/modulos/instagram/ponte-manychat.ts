@@ -13,13 +13,14 @@ import { q, q1, tx } from '../../db/db';
 import { obterToken } from './provedor';
 import { iguais, sha256, tokenForte } from '../../seguranca/cripto';
 import { resolverCidade, type Resolucao } from '../cidades/resolver';
-import { provisionar } from '../mundo/provisionar';
+import { provisionar, garantirIdentidade } from '../mundo/provisionar';
+import { RE_CODIGO } from './processar';
 
 const chave = () => process.env.PONTE_MANYCHAT_CHAVE || '';
 const url = () => config.urlPublica.replace(/\/+$/, '');
 
 /** texto do comentário mais recente do @ nos posts de campanha ativos (Graph API), ou null */
-async function ultimoComentarioDe(handle: string): Promise<string | null> {
+async function ultimoComentarioDe(handle: string): Promise<{ texto: string; t: number } | null> {
   const conta = config.instagram.contaId; if (!conta) return null;
   const token = await obterToken(conta).catch(() => null); if (!token) return null;
   // posts mais recentes da conta (não depende de habilitar cada post no painel) + os habilitados no painel
@@ -43,7 +44,26 @@ async function ultimoComentarioDe(handle: string): Promise<string | null> {
       url = j.paging?.next || null;
     }
   }
-  return melhor?.texto || null;
+  return melhor;
+}
+
+/** código SMN-... comentado pelo @: confere o desafio do navegador para a identidade da ponte */
+async function conferirCodigos(handle: string, codigos: string[]) {
+  return tx(async (t) => {
+    // a identidade que já tem casa com esse @ (criada pela ponte, pelo app oficial ou à mão); senão, a da ponte
+    const comCasa = await q1<{ id: string }>(
+      `select ei.id from external_identities ei join houses h on h.dono_identity_id = ei.id and h.principal and h.status in ('reservada','reivindicada')
+        where ei.provedor = 'instagram' and lower(ei.username) = $1 and ei.revogado_em is null order by (h.status = 'reivindicada') desc, ei.criado_em limit 1`, [handle], t);
+    const idt = comCasa ? { id: comCasa.id, revogado_em: null } : await garantirIdentidade(t, { escopo: 'manychat', externalId: 'u:' + handle, username: handle });
+    if (idt.revogado_em) return 'revogada' as const;
+    let ok = false;
+    for (const cod of codigos.slice(0, 3)) {
+      const ch = await q1(`update claim_challenges set verificado_identity_id = $2, verificado_em = now()
+                            where codigo_hash = $1 and verificado_identity_id is null and consumido_em is null and expira_em > now() returning id`, [sha256(cod), idt.id], t);
+      if (ch) ok = true;
+    }
+    return ok ? 'ok' as const : 'invalido' as const;
+  });
 }
 
 export function registrarPonteManychat(app: App) {
@@ -69,14 +89,38 @@ export function registrarPonteManychat(app: App) {
       if (r.tipo === 'ok' || (r.tipo === 'ambigua' && st.res.tipo === 'nao_encontrada')) st.res = r;
       return r.tipo === 'ok';
     };
-    let achou = false;
-    for (const t of candidatos) if (!achou) achou = await tentar(t);
-    if (!achou && origem === 'comentario') {
-      // o comentário pode levar alguns segundos para aparecer na Graph API: tenta de novo até 3x
-      for (let i = 0; i < 4 && !achou; i++) {
+    // 1) código de verificação (SMN-...) no texto ou no comentário RECENTE do @: libera o navegador que gerou o código
+    const codigosDe = (t: string) => t.toUpperCase().match(RE_CODIGO) || [];
+    let codigos = candidatos.flatMap(codigosDe);
+    let recente: string | null = null;
+    if (!codigos.length && origem === 'comentario') {
+      // o comentário pode levar alguns segundos para aparecer na Graph API: espera aparecer um dos últimos 3 minutos
+      for (let i = 0; i < 4; i++) {
         if (i) await new Promise((r) => setTimeout(r, 2500));
         const cm = await ultimoComentarioDe(handle);
-        if (cm) achou = await tentar(cm);
+        if (cm && Date.now() - cm.t < 180_000) { recente = cm.texto; break; }
+        if (cm && i === 3) recente = cm.texto;
+      }
+      if (recente) codigos = codigosDe(recente);
+    }
+    if (codigos.length) {
+      const r = await conferirCodigos(handle, codigos);
+      const mensagem = r === 'ok'
+        ? `✅ Código conferido, @${handle}! Pode voltar pro site: ele entra sozinho em alguns segundos. Se fechou a página, abra ${url()}/reivindicar.html no MESMO navegador.`
+        : r === 'revogada' ? 'Seus dados foram removidos do jogo a seu pedido.'
+          : `Esse código expirou ou já foi usado 😅 Gere um novo em ${url()}/reivindicar.html e comente de novo.`;
+      return c.json({ ok: true, resultado: r === 'ok' ? 'codigo_ok' : 'codigo_invalido', cidade: '', link: r === 'ok' ? url() + '/reivindicar.html' : '', mensagem });
+    }
+
+    // 2) cidade
+    let achou = false;
+    for (const t of candidatos) if (!achou) achou = await tentar(t);
+    if (!achou && recente) achou = await tentar(recente);
+    if (!achou && origem === 'comentario' && !recente) {
+      for (let i = 0; i < 3 && !achou; i++) {
+        if (i) await new Promise((r) => setTimeout(r, 2500));
+        const cm = await ultimoComentarioDe(handle);
+        if (cm) achou = await tentar(cm.texto);
       }
     }
     const res = st.res;

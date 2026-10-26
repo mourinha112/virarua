@@ -7,6 +7,7 @@ import { criarPets } from '../mundo/pets3d';
 import { criarObras } from '../mundo/obras3d';
 import { criarEnfeites } from '../mundo/enfeites3d';
 import { iniciarNovidades } from './novidades';
+import { lembrarAparelho } from './aparelho';
 import { criarRaios } from '../mundo/raios';
 import { iniciarRuaViva } from './ruaviva';
 import { iniciarJornal } from './jornal';
@@ -323,7 +324,9 @@ export async function iniciarApp(mundo: Mundo) {
     const casa = r.casa; cid3d.definirMeuAvatar({ ibge: casa.cidade.ibge, lote: casa.lote_index, config: (r.avatar?.config || {}) as any });
     (window as any).__irMinhaCasa = () => { const c = dados.POR_IBGE.get(casa.cidade.ibge); if (c) cid3d.forcar(c); const p = cid3d.posicaoLote(casa.cidade.ibge, casa.lote_index); if (p) mundo.camera.voar({ fx: p.x, fy: p.y, ld: Math.log(7), phi: 38 }); setTimeout(() => cid3d.acenarEu(), 2500); };
   }
-  (window as any).__carregarEu = carregarEu; void carregarEu();
+  (window as any).__carregarEu = carregarEu;
+  // restaura a sessão pelo aparelho lembrado (cookie apagado) antes de carregar a conta
+  void lembrarAparelho().then(() => carregarEu());
   // empresas virtuais de moradores viram prédios no mapa
   fetch('/api/empresas/mapa', { credentials: 'same-origin' }).then((r) => r.json()).then((j) => { if (j?.ok) cid3d.definirEmpresas(j.empresas.map((e: any) => ({ id: e.id, nome: e.nome, tipo: 'empresa', ibge: e.ibge, cor: e.cor, desc: e.ramo, ate: '', patrocinado: true, dono_lote: e.dono_lote }))); }).catch(() => {});
   // boneco no local de trabalho: empresa → frente do escritório; loja → loja do ramo na cidade; serviço público → praça
