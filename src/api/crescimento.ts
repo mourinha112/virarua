@@ -44,3 +44,14 @@ export const visitaApi = {
   curtir: (h: string) => req<CasaSocial & { xpDono: number }>('POST', '/casa-social/' + encodeURIComponent(h) + '/curtir', {}),
   online: (v: string) => req<{ online: number }>('POST', '/online', { v }),
 };
+
+/* retenção: baú diário, pet com fome, chuva de baús das 20h */
+export type BauEstado = { hoje: string; aberto: boolean; seq: number; proximo: number; perdeu: boolean; premios: number[] };
+export type ChuvaEstado = { ativa: boolean; faltaMin: number; restaMin: number; dia: string; porCidade: number; max: number; pegos: number; meus: string[] };
+export const retencaoApi = {
+  bau: () => req<BauEstado>('GET', '/bau-diario'),
+  abrirBau: () => req<{ seq: number; xp: number; pedida: number; amanha: number; premios: number[] }>('POST', '/bau-diario/abrir', {}),
+  alimentar: () => req<{ nome: string; humor: string; xp: number }>('POST', '/pets/eu/alimentar', {}),
+  chuva: () => req<ChuvaEstado>('GET', '/chuva'),
+  pegar: (ibge: number, idx: number) => req<{ xp: number; pegos: number; max: number }>('POST', '/chuva/pegar', { ibge, idx }),
+};

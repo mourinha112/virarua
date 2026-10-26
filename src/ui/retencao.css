@@ -1,0 +1,32 @@
+/* baú diário, pet com fome, chuva de baús e nível novo */
+.rt-caixa { position: relative; width: min(400px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--folha, #fffdf6); border: 4px solid var(--ink); border-radius: 28px; box-shadow: 0 6px 0 var(--ink); padding: 20px 16px 16px; text-align: center; animation: nv-pula .45s cubic-bezier(.2, 1.6, .4, 1); }
+.rt-caixa h2 { margin: 6px 0 10px; font-family: var(--fonte-titulo); font-weight: 400; font-size: 30px; line-height: 1.05; }
+.rt-caixa p { margin: 6px 0; }
+.rt-x { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--ink); background: #f6efdc; font-weight: 900; padding: 0; }
+.rt-tag { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; padding: 4px 12px; font-weight: 900; font-size: 13px; }
+.rt-dias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 12px; }
+.rt-dia { border: 2.5px solid var(--ink); border-radius: 14px; background: #fff; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; opacity: .75; }
+.rt-dia small { font-size: 10.5px; font-weight: 900; color: #6b7380; } .rt-dia span { font-size: 20px; } .rt-dia b { font-size: 13px; font-weight: 900; }
+.rt-dia.ok { background: #d8f5d0; opacity: 1; }
+.rt-dia.hoje { background: var(--amarelo); opacity: 1; box-shadow: 0 3px 0 var(--ink); animation: nv-pisca 1.2s infinite; }
+.rt-dia.grande { grid-column: span 2; background: linear-gradient(135deg, #ffe58a, #ffb03b); opacity: 1; }
+.rt-dia.grande.ok { background: #d8f5d0; }
+.rt-aviso { background: #ffe0e0; border-radius: 12px; padding: 6px 10px; font-weight: 800; font-size: 13px; }
+.rt-bau-bt { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--ink); background: radial-gradient(circle, #fff3a0, #ffd23f 60%, #ffb03b); box-shadow: 0 6px 0 var(--ink); font-size: 64px; padding: 0; margin: 4px auto 10px; display: grid; place-items: center; animation: rt-mexe 1.6s ease-in-out infinite; }
+.rt-bau-bt.abrindo { animation: rt-treme .12s linear infinite; }
+.rt-bau-bt.aberto { animation: nv-pula .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes rt-mexe { 0%, 70%, 100% { transform: rotate(0); } 75% { transform: rotate(-8deg); } 85% { transform: rotate(8deg); } }
+@keyframes rt-treme { 50% { transform: translateX(-4px) rotate(-4deg); } }
+.rt-res p { font-weight: 900; }
+.rt-xp { font-family: var(--fonte-titulo); font-size: 46px; color: var(--laranja); text-shadow: 0 3px 0 var(--ink); animation: nv-pula .5s cubic-bezier(.2, 1.6, .4, 1); }
+.rt-caixa .btn.bloco { margin-top: 8px; }
+.rt-pet-ic { font-size: 64px; line-height: 1.1; }
+.rt-novo { font-weight: 900; font-size: 16px; background: #f6efdc; border-radius: 12px; padding: 6px 10px; }
+.rt-fab { display: flex; align-items: center; gap: 6px; border: var(--borda) solid var(--ink); border-radius: 999px; padding: 4px 10px 4px 6px; box-shadow: var(--sombra-p); font-weight: 900; background: linear-gradient(135deg, #ffd23f, #ffb03b); position: relative; }
+.rt-fab span { font-size: 16px; } .rt-fab b { font-size: 12px; }
+.rt-fab i { position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--vermelho); border: 2px solid #fff; animation: nv-pisca 1.2s infinite; }
+.rt-chuva { border: var(--borda) solid var(--ink); border-radius: 999px; padding: 5px 12px; font-weight: 900; font-size: 12.5px; background: linear-gradient(135deg, #ffd23f, #ff8a1f); box-shadow: var(--sombra-p); animation: nv-pisca 1s infinite; }
+.rt-chuva[hidden] { display: none; }
+.pet-comida { text-align: center; }
+.pet-humor { font-size: 48px; line-height: 1; }
+@media (prefers-reduced-motion: reduce) { .rt-caixa, .rt-dia.hoje, .rt-bau-bt, .rt-fab i, .rt-chuva, .rt-xp { animation: none !important; } }

@@ -6,6 +6,9 @@ import { criarCidades3D } from '../mundo/cidades3d';
 import { criarPets } from '../mundo/pets3d';
 import { criarObras } from '../mundo/obras3d';
 import { criarEnfeites } from '../mundo/enfeites3d';
+import { criarNiveis } from '../mundo/niveis3d';
+import { criarChuva } from '../mundo/chuva3d';
+import { iniciarRetencao } from './retencao';
 import { iniciarNovidades } from './novidades';
 import { iniciarLayout } from './layout';
 import { lembrarAparelho } from './aparelho';
@@ -80,6 +83,8 @@ export async function iniciarApp(mundo: Mundo) {
   const pets3d = criarPets(mundo.scene, cid3d); (window as any).__pets3d = pets3d;
   const obras3d = criarObras(mundo.scene, cid3d); (window as any).__obras3d = obras3d;
   const enfeites3d = criarEnfeites(mundo.scene, cid3d); (window as any).__enfeites3d = enfeites3d;
+  const niveis3d = criarNiveis(mundo.scene, cid3d, dados.NV, ehCel ? 50 : 100);
+  const chuva3d = criarChuva(mundo.scene, cid3d); (window as any).__chuva3d = chuva3d;
   const rot = criarRotulos($('camada'));
   // cidades "em alta" (demo: as que mais pontuaram na semana) ganham raio de luz na vista de longe
   const raios = criarRaios([...dados.CID].sort((a, b) => b.pts - a.pts).slice(0, 14).map((c) => ({ x: c.x, y: c.y })));
@@ -229,6 +234,8 @@ export async function iniciarApp(mundo: Mundo) {
   /* ---------- toque no mapa ---------- */
   mundo.aoClicar(async (x, y) => {
     const D = mundo.camera.dist, cam = mundo.camera;
+    const bauT = chuva3d.achar(x, y, (a, b, h) => cam.projetar(a, b, h ?? 0) as [number, number, boolean]);
+    if (bauT) { void (window as any).__pegarBau?.(bauT.ibge, bauT.idx); return; }
     if (D < 60 && await ruaViva.tocar(x, y, (a, b, h) => cam.projetar(a, b, h ?? 0))) return;
     if (D < 140) {
       for (const lv of cid3d.lojas) { const [px, py, ok] = cam.projetar(lv.x, lv.y, 1.6); if (ok && Math.hypot(px - x, py - y) < 60) { ctx.visitarLoja(lv.loja); return; } }
@@ -258,7 +265,7 @@ export async function iniciarApp(mundo: Mundo) {
   const candCid = dados.ORDEM.slice(0, 600);
   let tick = 0;
   mundo.aoPasso((dt, t) => {
-    cid3d.passo(t); pets3d.passo(t, mundo.camera.dist); obras3d.passo(t, mundo.camera.dist, mundo.camera.cam); enfeites3d.passo(t, mundo.camera.dist); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
+    cid3d.passo(t); pets3d.passo(t, mundo.camera.dist); obras3d.passo(t, mundo.camera.dist, mundo.camera.cam); enfeites3d.passo(t, mundo.camera.dist); niveis3d.passo(t, mundo.camera.dist, mundo.camera.st.fx, mundo.camera.st.fy); chuva3d.passo(t, mundo.camera.dist); raios.passo(mundo.camera.dist, t); aeros.passo(t, mundo.camera.dist);
     const D = mundo.camera.dist;
     marc.passo(D, mundo.renderer.getPixelRatio(), innerWidth < 600 && D > 3000 ? 0.85 : 1);
     if ((tick++ & 1) === 1) return;
@@ -354,11 +361,12 @@ export async function iniciarApp(mundo: Mundo) {
   // sino de notificações
   const sino = document.createElement('button'); sino.id = 'sino'; sino.type = 'button'; sino.setAttribute('aria-label', 'notificações'); sino.innerHTML = '<span aria-hidden="true">🔔</span><i hidden></i>';
   sino.onclick = () => ctx.paineis.abrir('notificacoes'); $('topo').append(sino);
-  async function pollNotif() { const r = await fetch('/api/notificacoes', { credentials: 'same-origin' }).then((x) => x.json()).catch(() => null); const b = sino.querySelector('i')!; sino.hidden = !r?.ok; if (r?.ok) { b.hidden = !r.naoLidas; b.textContent = r.naoLidas > 9 ? '9+' : String(r.naoLidas); } }
+  async function pollNotif() { const r = await fetch('/api/notificacoes', { credentials: 'same-origin' }).then((x) => x.json()).catch(() => null); const b = sino.querySelector('i')!; sino.hidden = !r?.ok; if (r?.ok) { b.hidden = !r.naoLidas; b.textContent = r.naoLidas > 9 ? '9+' : String(r.naoLidas); (window as any).__aoNotif?.(r); } }
   void pollNotif(); setInterval(pollNotif, 30000); (window as any).__pollNotif = pollNotif;
   const ruaViva = iniciarRuaViva(ctx, cid3d);
   iniciarJornal(ctx);
   iniciarNovidades(ctx);
+  iniciarRetencao(ctx);
   (window as any).ctx = ctx; (window as any).__cid3d = cid3d;
   return ctx;
 }

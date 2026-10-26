@@ -9,9 +9,11 @@ import { exigirLogin, ErroHttp, limite } from '../http/app';
 import { q, q1, tx, type Exec } from '../db/db';
 import { conceder } from './recompensas/ledger';
 import { diaJogo } from './recompensas/regras';
+import { notificar } from './notificacoes';
 
 export const ADESIVOS = ['fogo', 'mao', 'coracao', 'estrela', 'festa'] as const;
 export const MAX_XP_VISITA = 20;
+const ADESIVO_EMOJI: Record<string, string> = { fogo: '🔥', mao: '👋', coracao: '❤️', estrela: '⭐', festa: '🎉' };
 const CURTIDA_DIA = '2000-01-01';   // curtida é uma vez só: dia fixo na chave única
 
 type Casa = { id: string; dono: string | null; status: string; handle: string };
@@ -48,6 +50,13 @@ async function registrarKudo(userId: string, handle: string, tipo: 'campainha' |
     const r = await q1<{ id: number }>(`insert into house_kudos (house_id, visitante_user_id, tipo, adesivo, dia) values ($1,$2,$3,$4,$5) on conflict do nothing returning id`, [c.id, userId, tipo, adesivo, dia], t);
     if (!r) throw new ErroHttp(409, tipo === 'curtida' ? 'você já curtiu essa casa' : 'você já tocou essa campainha hoje · volta amanhã');
     let xp = 0;
+    if (c.dono) {
+      const quem = (await q1<{ u: string }>(`select coalesce(username, '') u from external_identities where user_id = $1 and revogado_em is null order by criado_em limit 1`, [userId], t))?.u || '';
+      const ic = ADESIVO_EMOJI[adesivo || ''] || '♥';
+      await notificar(t, [c.dono], tipo === 'curtida'
+        ? { tipo: 'visita', titulo: '♥ curtiram a sua casa', texto: `@${quem || 'alguém'} curtiu a sua casa · +1 pra você`, acao: quem ? 'u:' + quem : 'casa', chave: `kudo:${r.id}` }
+        : { tipo: 'visita', titulo: '🔔 tocaram a sua campainha', texto: `@${quem || 'alguém'} deixou ${ic} na sua porta · visite de volta!`, acao: quem ? 'u:' + quem : 'casa', chave: `kudo:${r.id}` });
+    }
     if (c.dono && c.status === 'reivindicada') {
       const ja = (await q1<{ s: number }>(`select coalesce(sum(quantidade), 0)::int s from reward_ledger where user_id = $1 and origem = 'visita' and dia = $2`, [c.dono, diaJogo()], t))!.s;
       if (ja < MAX_XP_VISITA) xp = (await conceder(t, { userId: c.dono, regraId: 'xp1_visita@1', eventoRef: `${tipo}:${r.id}`, origem: 'visita', dados: { de: userId, tipo, adesivo } })).quantidade;

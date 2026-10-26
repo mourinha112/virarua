@@ -39,7 +39,8 @@ body.achou #pres { display: none; }
 
 /* ---- base: atalhos, hora/online + busca + negócio, folha ---- */
 #rodape { left: 8px; right: 8px; bottom: var(--base-y); align-items: stretch; gap: 8px; z-index: 22; }
-#atalhos { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; pointer-events: none; }
+#atalhos { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 5px; margin: -2px -2px -5px; pointer-events: none; }
+#atalhos > * { flex: none; }
 #atalhos > * { pointer-events: auto; }
 #atalhos .cr-fabs { position: static; flex-direction: row; gap: 6px; }
 #atalhos .cr-fab, #atalhos .jornal-fab { position: relative; inset: auto; padding: 4px 10px 4px 6px; box-shadow: var(--sombra-p); }
@@ -197,3 +198,4 @@ body.achou #rodape { display: none; }
 .pl-frase { font-weight: 900; margin: 0 0 10px; }
 body.achou #topo .rv-faixa { display: none; }
 #cartao .vs .btn.prim:not(:disabled) { background: var(--amarelo); }
+#atalhos, #atalhos * { touch-action: pan-x; }

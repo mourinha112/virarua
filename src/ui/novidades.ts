@@ -7,19 +7,20 @@ import { social } from '../api/social';
 import { crescimentoApi } from '../api/crescimento';
 import './crescimento.css';
 
-const VERSAO = '2026-10-26';
+const VERSAO = '2026-10-27';
 const LS_VISTO = 'smn_novidades', LS_EVENTO = 'smn_guerra_ultimo', LS_CONVITE = 'smn_convite';
 const ler = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const gravar = (k: string, v: string | null) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* sem storage */ } };
 const ehNatal = () => { const d = new Date(Date.now() - 3 * 3600_000).toISOString().slice(5, 10); return d >= '12-01' || d <= '01-06'; };
 
 export const NOVIDADES: { ic: string; tit: string; txt: string; painel: string; bt: string }[] = [
+  { ic: '🎁', tit: 'Baú diário', txt: 'um baú por dia. 7 dias seguidos e o último vale +50 XP. Pulou um dia? Volta pro 1.', painel: 'pontos', bt: 'ver pontos' },
+  { ic: '🌧️', tit: 'Chuva de baús às 20h', txt: 'todo dia, 15 minutos de baús dourados caindo nas cidades. Toca e pega: +5 XP cada.', painel: 'pontos', bt: 'ver' },
+  { ic: '🔔', tit: 'Campainha e curtidas', txt: 'visite casas, deixe um adesivo na porta e curta. O dono ganha +1 e recebe o aviso na hora.', painel: 'ranking', bt: 'visitar' },
+  { ic: '🍖', tit: 'Seu pet sente falta', txt: 'dê comida todo dia (+5 XP). Sem comida ele fica com fome e triste no mapa.', painel: 'pet', bt: 'ver pet' },
+  { ic: '🏡', tit: 'Casa que evolui', txt: 'flores, cerquinha, árvore, piscina, jardim e chafariz aparecem conforme o nível.', painel: 'casa', bt: 'minha casa' },
   { ic: '⚔️', tit: 'Guerra de cidades', txt: 'sua cidade contra o Brasil. Toda casa nova e todo XP contam. Quem lidera a semana?', painel: 'guerra', bt: 'ver placar' },
   { ic: '🗝️', tit: 'Caça ao tesouro', txt: 'um baú escondido numa cidade. Dica nova todo dia e 5 pás por dia. O 1º leva +50 XP.', painel: 'tesouro', bt: 'caçar' },
-  { ic: '📣', tit: 'Marque amigos e ganhe', txt: '+5 XP por @amigo marcado nos posts e +50 quando ele ganhar a casa.', painel: 'pontos', bt: 'ver pontos' },
-  { ic: '📨', tit: 'Vem ser meu vizinho', txt: 'seu link pessoal: quem entra cai na SUA rua e você ganha +20 XP.', painel: 'casa', bt: 'pegar link' },
-  { ic: '🔥', tit: 'Ofensiva', txt: 'missão todo dia acende uma chama na sua casa. 3, 7 e 30 dias dão bônus.', painel: 'enfeites', bt: 'ver chama' },
-  { ic: '🎨', tit: 'Enfeites da casa', txt: 'horta, bandeira do seu time, carro e piscina. Liberam com XP.', painel: 'enfeites', bt: 'enfeitar' },
   ...(ehNatal() ? [{ ic: '🎄', tit: 'Natal no mapa', txt: 'cidades iluminadas, árvore na praça e missão especial de presentes.', painel: 'missoes', bt: 'missão' }] : []),
 ];
 
@@ -27,7 +28,7 @@ function popup(ctx: Ctx) {
   const fundo = el('div', 'nv-fundo'); fundo.setAttribute('role', 'dialog'); fundo.setAttribute('aria-modal', 'true'); fundo.setAttribute('aria-label', 'novidades do jogo');
   const cx = el('div', 'nv-caixa');
   const fechar = () => { gravar(LS_VISTO, VERSAO); fundo.remove(); };
-  const topo = el('div', 'nv-topo'); topo.append(el('small', '', '🔥 NOVIDADES'), el('h2', '', 'o ViraRua ficou ENORME'), el('p', 'nota', 'tudo isso chegou hoje. Toca pra testar:'));
+  const topo = el('div', 'nv-topo'); topo.append(el('small', '', '🔥 NOVIDADES'), el('h2', '', 'novidade no ViraRua!'), el('p', 'nota', 'tudo isso chegou hoje. Toca pra testar:'));
   cx.append(botao('fechar nv-fechar', '✕', fechar, 'fechar'), topo);
   NOVIDADES.forEach((n, i) => {
     const it = el('div', 'nv-item'); it.style.animationDelay = i * 70 + 'ms';

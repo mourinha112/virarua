@@ -6,6 +6,9 @@ import { recompensasApi, type ExtratoUI } from '../api/recompensas';
 
 const fmt = (n: number) => n.toLocaleString('pt-BR');
 export const COMO_GANHAR: [string, string, string][] = [
+  ['🎁', 'abrir o baú diário (7 dias seguidos)', '+5 a +50 XP por dia'],
+  ['🌧️', 'chuva de baús: todo dia às 20h por 15 min', '+5 XP por baú (até 5)'],
+  ['🍖', 'dar comida pro seu pet', '+5 XP, 1 vez por dia'],
   ['✅', 'cada missão do dia', '+5 XP (e +10 pra rua)'],
   ['💼', 'trabalhar no dia', '+10 XP'],
   ['💬', 'comentar num post do @viraruajogo', '+5 XP por post, 1 vez por dia'],
@@ -18,7 +21,7 @@ export const COMO_GANHAR: [string, string, string][] = [
   ['🔔', 'alguém toca a sua campainha ou curte a sua casa', '+1 XP cada (até 20 por dia)'],
   ['🎉', 'eventos da cidade e da semana', 'varia'],
 ];
-const FONTE: Record<string, string> = { missao: '✅ missões', trabalho: '💼 trabalho', comentario: '💬 comentários', amigo: '🤝 amigos', loja: '🏪 lojas marcadas', marcar: '📣 amigos marcados', tesouro: '🗝️ tesouro', ofensiva: '🔥 ofensiva', convite: '📨 vizinhos chamados', visita: '🔔 visitas na casa', evento: '🎉 eventos', obra: '🏗️ obra', competicao: '🏆 competição' };
+const FONTE: Record<string, string> = { missao: '✅ missões', trabalho: '💼 trabalho', comentario: '💬 comentários', amigo: '🤝 amigos', loja: '🏪 lojas marcadas', marcar: '📣 amigos marcados', tesouro: '🗝️ tesouro', ofensiva: '🔥 ofensiva', convite: '📨 vizinhos chamados', visita: '🔔 visitas na casa', bau: '🎁 baú diário', chuva: '🌧️ chuva de baús', pet: '🍖 pet', evento: '🎉 eventos', obra: '🏗️ obra', competicao: '🏆 competição' };
 
 function rotulo(x: ExtratoUI) {
   if (x.regra_id.startsWith('xp5_comentario')) return '💬 comentou num post do jogo';

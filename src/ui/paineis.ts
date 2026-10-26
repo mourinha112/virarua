@@ -332,7 +332,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     for (const n of r.itens) {
       const b = el('button', 'cartao-b notif' + (n.lida ? '' : ' nova')); (b as HTMLButtonElement).type = 'button';
       b.append(el('b', '', n.titulo), el('span', '', n.texto), el('small', 'nota', new Date(n.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })));
-      b.onclick = () => { if (n.acao) abrir(n.acao); }; c.append(b);
+      b.onclick = () => { if (!n.acao) return; if (n.acao.startsWith('u:')) { fechar(); ctx.buscar('@' + n.acao.slice(2)); } else abrir(n.acao); }; c.append(b);
     }
     const csrf = decodeURIComponent(document.cookie.match(/(?:^|; )smn_csrf=([^;]+)/)?.[1] || '');
     void fetch('/api/notificacoes/lidas', { method: 'POST', credentials: 'same-origin', headers: { 'x-csrf': csrf } }).then(() => (window as any).__pollNotif?.());

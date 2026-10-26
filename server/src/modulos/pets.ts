@@ -5,6 +5,8 @@ import type { App } from '../http/app';
 import { exigirLogin, ErroHttp, limite } from '../http/app';
 import { q, q1 } from '../db/db';
 import { moderarTexto } from './social/moderacao';
+import { humorPet } from './retencao';
+import { diaJogo } from './recompensas/regras';
 
 export const META_PET = 50;
 export const CORES_PET = { gato: ['laranja', 'cinza', 'preto', 'branco', 'siames'], cachorro: ['caramelo', 'marrom', 'preto', 'branco', 'malhado'] } as const;
@@ -20,7 +22,9 @@ async function pontosDe(userId: string) {
 export function registrarPets(app: App) {
   app.get('/api/pets/eu', async (c) => {
     const u = exigirLogin(c);
-    const [{ pts, casa }, pet] = await Promise.all([pontosDe(u.id), q1(`select especie, cor, nome from pets where user_id = $1`, [u.id])]);
+    const [{ pts, casa }, p, comeu] = await Promise.all([pontosDe(u.id), q1<{ especie: string; cor: string; nome: string; alimentado_em: Date }>(`select especie, cor, nome, alimentado_em from pets where user_id = $1`, [u.id]),
+      q1(`select 1 from reward_ledger where user_id = $1 and regra_id = 'xp5_pet@1' and evento_ref = $2`, [u.id, diaJogo()])]);
+    const pet = p ? { especie: p.especie, cor: p.cor, nome: p.nome, humor: humorPet(p.alimentado_em), comeuHoje: !!comeu } : null;
     return c.json({ ok: true, pet, pontos: pts, meta: META_PET, liberado: casa && pts >= META_PET, temCasa: casa, cores: CORES_PET });
   });
 
@@ -46,11 +50,11 @@ export function registrarPets(app: App) {
   app.get('/api/pets', limite(120), async (c) => {
     const ibges = String(c.req.query('ibge') || '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 30);
     if (!ibges.length) return c.json({ ok: true, pets: [] });
-    const pets = await q(
-      `select p.ibge, p.lote_index lote, pt.especie, pt.cor, pt.nome
+    const pets = (await q<{ alimentado_em: Date | null }>(
+      `select p.ibge, p.lote_index lote, pt.especie, pt.cor, pt.nome, pt.alimentado_em
          from pets pt join houses h on h.dono_user_id = pt.user_id and h.principal and h.status = 'reivindicada'
          join plots p on p.id = h.plot_id
-        where p.ibge = any($1::int[]) limit 3000`, [ibges]);
+        where p.ibge = any($1::int[]) limit 3000`, [ibges])).map(({ alimentado_em, ...x }) => ({ ...x, humor: humorPet(alimentado_em) }));
     return c.json({ ok: true, pets });
   });
 }

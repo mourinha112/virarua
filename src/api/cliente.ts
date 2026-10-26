@@ -35,7 +35,8 @@ export const api = {
 };
 
 export type Especie = 'gato' | 'cachorro';
-export type PetUI = { especie: Especie; cor: string; nome: string };
+export type HumorPet = 'feliz' | 'fome' | 'triste';
+export type PetUI = { especie: Especie; cor: string; nome: string; humor?: HumorPet; comeuHoje?: boolean };
 export type PetMapa = PetUI & { ibge: number; lote: number };
 export const petsApi = {
   eu: () => req<{ pet: PetUI | null; pontos: number; meta: number; liberado: boolean; temCasa: boolean; cores: Record<Especie, string[]> }>('GET', '/pets/eu'),

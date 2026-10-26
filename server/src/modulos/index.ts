@@ -22,6 +22,7 @@ import { registrarPets } from './pets';
 import { registrarMetricas } from './metricas';
 import { registrarCrescimento } from './crescimento';
 import { registrarVisitas } from './visitas';
+import { registrarRetencao } from './retencao';
 
 export const MODULOS = { identidade, instagram, mundo, avatares, social, eleicoes, recompensas, eventos, estabelecimentos, conteudo, admin };
-export function registrarModulos(app: App) { for (const m of Object.values(MODULOS)) m.registrar(app); registrarIntegracao(); registrarDev(app); registrarRuaViva(app); registrarTrabalho(app); registrarNotificacoes(app); registrarPacote(app); registrarPonteManychat(app); registrarPets(app); registrarMetricas(app); registrarCrescimento(app); registrarVisitas(app); }
+export function registrarModulos(app: App) { for (const m of Object.values(MODULOS)) m.registrar(app); registrarIntegracao(); registrarDev(app); registrarRuaViva(app); registrarTrabalho(app); registrarNotificacoes(app); registrarPacote(app); registrarPonteManychat(app); registrarPets(app); registrarMetricas(app); registrarCrescimento(app); registrarVisitas(app); registrarRetencao(app); }

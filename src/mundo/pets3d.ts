@@ -76,9 +76,9 @@ export function criarPets(scene: T.Scene, fonte: Fonte) {
       const L = fonte.layout(c.ibge); const lista = cache.get(c.ibge)?.pets; if (!L || !lista) continue;
       for (const p of lista) {
         const lo = L.lotes[p.lote]; if (!lo) continue;
-        const k = `${p.ibge}:${p.lote}:${p.especie}:${p.cor}`; quero.add(k);
+        const k = `${p.ibge}:${p.lote}:${p.especie}:${p.cor}:${p.humor || 'feliz'}`; quero.add(k);
         let g = vivos.get(k);
-        if (!g) { g = criarPet(p.especie, p.cor); g.scale.setScalar(0.16); vivos.set(k, g); raiz.add(g); }
+        if (!g) { g = criarPet(p.especie, p.cor); g.scale.setScalar(0.16); g.userData.humor = p.humor || 'feliz'; if (g.userData.humor !== 'feliz') { g.userData.cab.rotation.x = 0.45; g.userData.corpo.position.y = -0.12; } vivos.set(k, g); raiz.add(g); }
         // na frente da casa, um pouco para o lado (o dono fica no meio)
         const fx = Math.sin(lo.yaw), fy = -Math.cos(lo.yaw), sx = Math.cos(lo.yaw), sy = Math.sin(lo.yaw);
         g.position.set(lo.x + fx * 0.62 + sx * 0.3, 0, -(lo.y + fy * 0.62 + sy * 0.3));
@@ -98,6 +98,7 @@ export function criarPets(scene: T.Scene, fonte: Fonte) {
       if (sujo) montar();
       for (const g of vivos.values()) {
         const u = g.userData, t = agora + u.fase;
+        if (u.humor !== 'feliz') { u.rabo.rotation.z = 0; u.corpo.scale.y = 1 + Math.sin(t * 1.2) * 0.04; u.cab.rotation.y = Math.sin(t * 0.3) * 0.15; continue; }   // com fome: cabisbaixo, rabo parado
         u.rabo.rotation.z = Math.sin(t * (u.gato ? 2.2 : 9)) * (u.gato ? 0.35 : 0.55);
         u.corpo.scale.y = 1 + Math.sin(t * 2.4) * 0.025;
         u.cab.rotation.y = Math.sin(t * 0.45) * 0.5;
