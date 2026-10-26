@@ -35,14 +35,13 @@ export function registrar(app: App) {
       `select street_id, modelo, titulo, status, progresso, meta_total, etapas from (
          select *, row_number() over (partition by street_id, status order by coalesce(concluida_em, criada_em) desc) rn
            from community_projects where street_id = any($1::uuid[])) x
-        where status = 'em_obra' or rn <= 2`, [ruas.map((r) => r.id)])).rows;
+        where (status = 'em_obra' and progresso > 0) or (status = 'concluida' and rn <= 2)`, [ruas.map((r) => r.id)])).rows;
+    // só aparece no mapa a obra que alguém da rua já começou (missão feita) e as prontas
     return c.json({ ok: true, ruas: ruas.map((r) => {
       const minhas = obras.filter((o) => o.street_id === r.id);
       const lista = minhas.map((o) => ({ modelo: o.modelo, titulo: o.titulo, status: o.status, etapa: (o.etapas as { ate: number }[]).filter((e) => o.progresso >= e.ate).length, etapas: o.etapas.length, pct: Math.round((100 * o.progresso) / o.meta_total) }));
-      // rua sem obra aberta ainda: mostra o canteiro da próxima do rodízio (etapa 0)
-      if (!lista.some((o) => o.status === 'em_obra')) { const m = MODELOS[minhas.filter((o) => o.status === 'concluida').length % MODELOS.length]; lista.unshift({ modelo: m.modelo, titulo: m.titulo, status: 'em_obra', etapa: 0, etapas: m.etapas.length, pct: 0 }); }
       return { id: r.id, nome: r.nome, ibge: r.ibge, lotes: r.lotes, obras: lista.sort((a, b) => (a.status === 'em_obra' ? -1 : 0) - (b.status === 'em_obra' ? -1 : 0)) };
-    }) });
+    }).filter((r) => r.obras.length) });
   });
   app.get('/api/missoes', async (c) => {
     const u = exigirLogin(c);
