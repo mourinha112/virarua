@@ -6,6 +6,7 @@ import { q1, emitir, tx, type Tx } from '../../db/db';
 import { config } from '../../config';
 import { codigoLegivel, sha256, tokenForte } from '../../seguranca/cripto';
 import { marcarOnboarding } from '../mundo/provisionar';
+import { pagarIndicacoes, isolado } from '../instagram/indicacoes';
 import { ErroHttp } from '../../http/app';
 
 /** nome público: 2–30 caracteres, letras/números/espaço e . _ ' - (sem @, sem HTML) */
@@ -56,6 +57,7 @@ export async function concluirIdentidade(c: Tx, identityId: string, nomePublico:
   const ob = await q1<{ estado: string }>(`select estado from onboarding where identity_id = $1`, [identityId], c);
   if (h || !ob || !['claimed', 'onboarding_complete'].includes(ob.estado)) await marcarOnboarding(c, identityId, 'claimed', null, { forcar: true });
   await c.query(`insert into privacy_preferences (user_id) values ($1) on conflict (user_id) do nothing`, [userId]);
+  if (h) await isolado(c, 'indicacoes', () => pagarIndicacoes(c, identityId));
   if (h) await emitir(c, 'casa.reivindicada', { house_id: h.id, user_id: userId, identity_id: identityId }, 'casa.reivindicada:' + h.id);
   return { userId, houseId: h?.id ?? null };
 }

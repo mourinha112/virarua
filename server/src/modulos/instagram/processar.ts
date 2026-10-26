@@ -8,6 +8,7 @@ import { sha256, tokenForte } from '../../seguranca/cripto';
 import { resolverCidade } from '../cidades/resolver';
 import { provisionar, garantirIdentidade, marcarOnboarding } from '../mundo/provisionar';
 import { provedorInstagram } from './provedor';
+import { pontosDoComentario, isolado } from './indicacoes';
 import { enfileirarRespostaPublica, enfileirarAvisoDono, respostasLigadas } from './respostas';
 
 export const CAMPOS_COMENTARIO = new Set(['comments', 'live_comments']);
@@ -75,6 +76,8 @@ export async function processarComentario(m: MudancaComentario): Promise<Resulta
     if (!fromId || !/^\d{1,40}$/.test(fromId)) return fim('needs_review', 'comentário sem id estável do autor (from.id); nada é resolvido por username');
     if (fromId === m.conta_id) return fim('ignored', 'comentário da própria conta oficial');
     const ident = { escopo: m.conta_id, externalId: fromId, username, eventoEm };
+    // pontos do comentário (+5 XP por post/dia) e @amigos marcados (pagos quando o amigo confirmar a casa)
+    await isolado(c, 'pontos_comentario', () => pontosDoComentario(c, { escopo: m.conta_id, externalId: fromId, username, mediaId, commentId, texto }));
 
     // desafio por código: o AUTOR comprovado (from.id) publicou o código mostrado num navegador
     const codigos = (texto.toUpperCase().match(RE_CODIGO) || []).slice(0, 3);

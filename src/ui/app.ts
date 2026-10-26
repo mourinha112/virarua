@@ -12,7 +12,7 @@ import { criarAeroportos, META_AEROPORTO } from '../mundo/aeroportos';
 import { TERRENO, UF_POR_SIGLA, ufEm } from '../mundo/terreno';
 import { carregarDados, normHandle, semAcento, fmtN, type Dados, type Cidade } from '../dados/dados';
 import { $, el, toast } from './dom';
-import { CARGOS, PONTOS } from '../jogo/regras';
+import { CARGOS } from '../jogo/regras';
 import { api } from '../api/cliente';
 import { esc } from '../mundo/rotulos';
 const NIV_CID = ['bairro', 'cidade', 'polo', 'metrópole', 'capital'];
@@ -286,7 +286,7 @@ export async function iniciarApp(mundo: Mundo) {
     }
     if (D < 60) for (const r of ruaViva.rotulos()) L.push({ id: r.id, x: r.x, y: r.y, alt: 1.3, txt: r.txt, cls: 'casa eu', pri: 8e5 });
     if (D < 260) for (const lv of cid3d.lojas) { const l = lv.loja, ini = l.nome.split(/s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
-      const html = `<div class="pat-box"><span class="pat-logo" style="background:${esc(l.cor)}">${esc(ini)}</span><span>${esc(l.nome)}</span>${l.ig ? `<span class="pat-h">@${esc(l.ig)}</span>` : ''}<span class="pat-selo">☆ PATROCINADO</span><span class="pat-pts">+${PONTOS.seguirLoja}</span></div>`;
+      const html = `<div class="pat-box"><span class="pat-logo" style="background:${esc(l.cor)}">${esc(ini)}</span><span>${esc(l.nome)}</span>${l.ig ? `<span class="pat-h">@${esc(l.ig)}</span>` : ''}<span class="pat-selo">☆ PATROCINADO</span>${l.ig ? '<span class="pat-pts">+10</span>' : ''}</div>`;
       L.push({ id: 'l' + l.id, x: lv.x, y: lv.y, alt: 4.4, txt: l.nome, html, larg: 160 + l.nome.length * 9 + (l.ig ? l.ig.length * 7 : 0), cls: 'pat', pri: 9e5, dy: -12 }); }
     if (D > 600) {
       const fr = Object.keys(dados.p.frases); const k0 = Math.floor(t / 7);

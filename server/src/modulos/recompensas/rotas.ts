@@ -5,6 +5,7 @@ import { exigirLogin, ErroHttp, limite } from '../../http/app';
 import { tx, db } from '../../db/db';
 import { registrarJob } from '../../jobs/fila';
 import { missoesDoDia, desafioMissao, concluirMissao } from './missoes';
+import { resumoIndicacoes } from '../instagram/indicacoes';
 import { obraParaUI, moradia, MODELOS } from './obras';
 import { competicaoDaRua, garantirTemporada, recalcularLideres, apurarTemporada } from './competicao';
 import { resumoUsuario } from './ledger';
@@ -64,6 +65,18 @@ export function registrar(app: App) {
     return c.json({ ok: true, resumo: await resumoUsuario(db(), u.id) });
   });
 
+  // extrato de pontos: de onde veio cada XP + amigos marcados no Instagram
+  app.get('/api/pontos/eu', async (c) => {
+    const u = exigirLogin(c);
+    const fontes = (await db().query(
+      `select case when regra_id like 'xp5_comentario%' then 'comentario' when regra_id like 'xp50_amigo%' then 'amigo' when regra_id like 'xp10_loja%' then 'loja'
+                   when evento_ref = 'trabalho' then 'trabalho' else origem end fonte, sum(quantidade)::int xp, count(*)::int vezes
+         from reward_ledger where user_id = $1 and sistema = 'xp' group by 1 order by 2 desc`, [u.id])).rows;
+    const extrato = (await db().query(
+      `select to_char(criado_em at time zone 'America/Sao_Paulo', 'DD/MM HH24:MI') quando, regra_id, origem, evento_ref, quantidade, limitado, dados
+         from reward_ledger where user_id = $1 and sistema = 'xp' order by criado_em desc limit 25`, [u.id])).rows;
+    return c.json({ ok: true, resumo: await resumoUsuario(db(), u.id), fontes, extrato, amigos: await resumoIndicacoes(u.id) });
+  });
   app.get('/api/ruas/:id/competicao', async (c) => {
     const rua = await ruaExiste(String(c.req.param('id')));
     const u = c.get('usuario');

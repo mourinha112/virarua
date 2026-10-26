@@ -1,7 +1,6 @@
 /* Painéis "lojas" e "seu negócio no mapa" no formato da referência visual (layout e textos próprios). */
 import type { Ctx } from './app';
 import { MUN, MUNICIPIOS, semAcento, normHandle } from '../dados/dados';
-import { PONTOS } from '../jogo/regras';
 import { el, botao, toast } from './dom';
 import { api } from '../api/cliente';
 
@@ -15,18 +14,12 @@ const dataBR = (iso: string) => iso.split('-').reverse().slice(0, 2).join('/');
 
 export function painelLojas(c: HTMLElement, ctx: Ctx, fechar: () => void) {
   const D = ctx.dados.p;
-  const segidas = (() => { try { return new Set<string>(JSON.parse(localStorage.getItem('smn_lojas_seguidas') || '[]')); } catch { return new Set<string>(); } })();
   const hero = el('section', 'lj-hero');
-  hero.append(el('h2', 'out lj-tit', 'Visite as lojas e ganhe pontos'));
+  hero.append(el('h2', 'out lj-tit', 'Conheça as lojas e ganhe pontos'));
   const p = el('p', 'lj-txt');
-  p.append('seguir a loja pelo botão do cartão = ', pill('+' + PONTOS.seguirLoja + ' pts'), ' (1 vez por loja, até 15 lojas por dia). marcar o @ dela num comentário do jogo = ', pill('+10 pts'), ' (1 vez por loja).');
+  p.append('marque o @ da loja num comentário de qualquer post do @viraruajogo = ', pill('+10 XP'), ' (1 vez por loja). Seguir não dá ponto: o Instagram não deixa conferir quem segue.');
   hero.append(p);
-  const prog = el('div', 'lj-prog');
-  const total = D.lojas.length, ganhas = D.lojas.filter((l) => segidas.has(l.id)).length;
-  const lp = el('p', 'lj-prog-t'); lp.append('você já ganhou ', el('b', '', `${ganhas} de ${total}`), ' lojas');
-  const bar = el('div', 'barra'); const fill = el('i'); fill.style.width = (total ? Math.round((ganhas / total) * 100) : 0) + '%'; bar.append(fill);
-  prog.append(lp, bar, el('p', 'nota', `cada loja que você segue vale +${PONTOS.seguirLoja} pts`));
-  hero.append(prog); c.append(hero);
+  c.append(hero);
 
   let modo: 'perto' | 'todas' = 'todas';
   const seg = el('div', 'lj-seg');
@@ -53,7 +46,7 @@ export function painelLojas(c: HTMLElement, ctx: Ctx, fechar: () => void) {
       const tx = el('div', 'lj-tx');
       tx.append(el('b', 'lj-nome', x.nome), el('span', 'lj-sub', `${TIPO_NOME[x.tipo] || x.tipo} · ${m?.nome}-${m?.uf}`));
       if (x.desc) tx.append(el('span', 'lj-desc', x.desc));
-      const ch = el('div', 'lj-chips'); ch.append(pill(segidas.has(x.id) ? 'seguindo ✓' : `+${PONTOS.seguirLoja} disponível`, 'am'), el('span', 'lj-ate', 'até ' + dataBR(x.ate))); tx.append(ch);
+      const ch = el('div', 'lj-chips'); ch.append(pill(x.ig ? `marque @${x.ig}: +10 XP` : 'patrocinado', 'am'), el('span', 'lj-ate', 'até ' + dataBR(x.ate))); tx.append(ch);
       const vis = botao('btn prim lj-vis', 'visitar', () => { fechar(); ctx.visitarLoja(x); });
       card.append(dot, tx, vis); lista.append(card);
     }

@@ -2,8 +2,9 @@
 import type { Ctx } from './app';
 import type { Cidade } from '../dados/dados';
 import { fmtN, MUNICIPIOS } from '../dados/dados';
-import { CARGOS, NIVEIS, PONTOS, CORES_PAREDE, CORES_TELHADO, proximoFechamento } from '../jogo/regras';
+import { CARGOS, NIVEIS, CORES_PAREDE, CORES_TELHADO, proximoFechamento } from '../jogo/regras';
 import { el, botao, botaoFechar, toast, ICONES } from './dom';
+import { COMO_GANHAR } from './painel-pontos';
 
 const nomeCargo = (l: string | null, c?: Cidade) => {
   if (!l) return '';
@@ -88,9 +89,8 @@ export function cartaoCasa(ctx: Ctx, gi: number) {
 
   // como ganhar pontos
   const bp = el('section', 'bloco'); bp.append(el('h3', '', 'como ganhar pontos'));
-  for (const [t, p] of [['comentar a sua cidade num post do jogo', PONTOS.comentario], ['amigo que você marcou ganhou a casa', PONTOS.amigoEntrou], ['story marcando o jogo (1 por dia)', PONTOS.story], ['seguir uma loja do mapa', PONTOS.seguirLoja], ['cada voto que você recebe', PONTOS.votoRecebidoBase], ['missão da cidade', PONTOS.missao]] as [string, number][]) {
-    const l = el('div', 'linha'); l.append(el('span', '', t), el('b', '', '+' + p)); bp.append(l);
-  }
+  for (const [ic, t, v] of COMO_GANHAR) { const l = el('div', 'linha'); l.append(el('span', '', `${ic} ${t}`), el('b', '', v)); bp.append(l); }
+  bp.append(botao('btn mini', '📊 meus pontos', () => ctx.paineis.abrir('pontos')));
   cart.append(bp);
 
   // é minha
@@ -194,7 +194,7 @@ export function cartaoLoja(ctx: Ctx, l: import('../dados/formato').Loja) {
   if (c) {
     const st = el('div', 'loja-stats');
     const it = (n: string, t: string) => { const d = el('div'); d.append(el('b', '', n), el('span', '', t)); st.append(d); };
-    it(fmtN(c.n), 'moradores na cidade'); it(fmtN(c.pts), 'pontos na semana'); it('+' + PONTOS.seguirLoja, 'pts por seguir');
+    it(fmtN(c.n), 'moradores na cidade'); it(fmtN(c.pts), 'pontos na semana'); it('+10', 'XP por marcar o @');
     cart.append(st);
   }
   const pat = el('div', 'loja-pat'); pat.innerHTML = ICONES.loja; pat.append(el('b', 'etiq ink', 'patrocinado'), el('span', '', 'no mapa até ' + l.ate.split('-').reverse().slice(0, 2).join('/')));
@@ -218,11 +218,11 @@ export function cartaoLoja(ctx: Ctx, l: import('../dados/formato').Loja) {
   }
   if (l.ig) {
     const a = el('a', 'btn prim bloco loja-seguir'); a.href = 'https://www.instagram.com/' + l.ig + '/'; a.target = '_blank'; a.rel = 'noopener nofollow sponsored';
-    a.append(el('b', '', 'seguir @' + l.ig), el('small', '', 'no Instagram · +' + PONTOS.seguirLoja + ' pts'));
+    a.append(el('b', '', 'ver @' + l.ig), el('small', '', 'no Instagram'));
     cart.append(a);
     const gi = ctx.eu();
     if (gi >= 0) { const q = el('div', 'loja-eu'); q.append(el('span', '', 'você: @' + ctx.dados.USR[gi] + ' · '), botao('btn mini', 'não sou eu', () => { ctx.esquecerEu(); ctx.abrirCartao(cartaoLoja(ctx, l)); })); cart.append(q); }
-    const mk = el('div', 'loja-marca'); mk.append(el('span', '', `marca @${l.ig} num comentário de um post do jogo: +10 pts (1 vez)`), botao('btn mini prim', 'copiar @', async () => { try { await navigator.clipboard.writeText('@' + l.ig); toast('@ copiado'); } catch { toast('@' + l.ig); } }));
+    const mk = el('div', 'loja-marca'); mk.append(el('span', '', `marca @${l.ig} num comentário de um post do jogo: +10 XP (1 vez)`), botao('btn mini prim', 'copiar @', async () => { try { await navigator.clipboard.writeText('@' + l.ig); toast('@ copiado'); } catch { toast('@' + l.ig); } }));
     cart.append(mk);
   } else cart.append(el('p', 'nota', 'loja de demonstração (fictícia): sem perfil externo.'));
   cart.append(botao('btn bloco', 'entrar na loja', () => ctx.paineis.abrir('loja', { id: l.id })));

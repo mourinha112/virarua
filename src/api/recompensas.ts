@@ -27,7 +27,10 @@ export type CompeticaoUI = {
 };
 export type ConclusaoUI = { ja_concluida: boolean; contribuiu?: boolean; motivo_sem_ponto?: string | null; recompensas: { sistema: string; quantidade: number; limitado: boolean }[] };
 
+export type ExtratoUI = { quando: string; regra_id: string; origem: string; evento_ref: string; quantidade: number; limitado: boolean; dados: any };
+export type PontosUI = { resumo: ResumoUI; fontes: { fonte: string; xp: number; vezes: number }[]; extrato: ExtratoUI[]; amigos: { amigo: string; estado: 'pago' | 'esperando' }[] };
 export const recompensasApi = {
+  pontos: () => req<PontosUI>('GET', '/pontos/eu'),
   missoes: () => req<{ dia: string; morador: boolean; rua: string | null; missoes: MissaoUI[]; resumo: ResumoUI }>('GET', '/missoes'),
   desafio: (missao: string) => req<{ desafio: DesafioUI }>('POST', `/missoes/${missao}/desafio`),
   concluir: (missao: string, desafio_id: string, resposta: unknown) => req<ConclusaoUI>('POST', `/missoes/${missao}/concluir`, { desafio_id, resposta }),

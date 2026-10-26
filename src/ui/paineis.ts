@@ -10,6 +10,7 @@ import { montarPainelAvatar } from './painel-avatar';
 import { montarPainelEleicoes } from './painel-eleicoes';
 import { montarPainelPet } from './painel-pet';
 import { montarPainelConstrucoes } from './painel-construcoes';
+import { montarPainelPontos } from './painel-pontos';
 import { montarPainelMissoes } from './painel-missoes';
 import { montarPainelLoja } from './painel-loja';
 import { painelLojas, painelNegocio } from './painel-lojas-neg';
@@ -45,6 +46,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     avatar: { titulo: 'meu avatar', desenhar: async (c) => { descarte?.dispose(); descarte = await montarPainelAvatar(c, { abrirReivindicar: () => abrir('reivindicar', { gi: ctx.eu() }), aoSalvar: () => { toast('avatar salvo'); (window as any).__carregarEu?.(); } }); } },
     missoes: { titulo: 'missões do dia', desenhar: (c) => montarPainelMissoes(c, ctx) },
     pet: { titulo: 'meu pet', desenhar: (c) => montarPainelPet(c, abrir) },
+    pontos: { titulo: 'meus pontos', desenhar: (c) => montarPainelPontos(c, abrir) },
     construcoes: { titulo: 'o que dá pra construir', desenhar: (c) => montarPainelConstrucoes(c, ctx, abrir) },
     videos: { titulo: 'destaques da semana', desenhar: (c) => videos(c) },
     notificacoes: { titulo: 'notificações', desenhar: (c) => notificacoes(c) },
@@ -233,7 +235,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
   /* ---------- Lojas ---------- */
   function lojas(c: HTMLElement) {
     const hero = el('div', 'cartao-b papel');
-    hero.append(el('h2', '', 'visite as lojas do mapa'), el('p', 'nota', `cada loja é um espaço patrocinado e identificado. Seguir uma loja pelo botão do cartão vale +${PONTOS.seguirLoja} pts (1 vez por loja).`));
+    hero.append(el('h2', '', 'visite as lojas do mapa'), el('p', 'nota', 'cada loja é um espaço patrocinado e identificado. Marcar o @ da loja num comentário de um post do jogo vale +10 XP (1 vez por loja).'));
     c.append(hero);
     const busca = el('input'); busca.placeholder = 'buscar loja ou cidade'; busca.className = 'frase-inp'; c.append(busca);
     const lista = el('div'); c.append(lista);
@@ -263,7 +265,7 @@ export function montarPaineis(ctx: Ctx): Paineis {
     for (const [p, r] of [
       ['quem vê meu voto?', 'ninguém vê em quem você votou: só os totais aparecem.'],
       ['zerou meus pontos?', 'domingo zera só os pontos da semana. Casa, nível e XP ficam.'],
-      ['não recebi os pontos', 'entram em até 20 min. Story só conta se marcar o jogo.'],
+      ['não recebi os pontos', 'missão e trabalho entram na hora. Comentário e loja marcada entram quando o comentário chega (alguns minutos). Amigo marcado só conta quando ele confirma a casa. Veja tudo em "meus pontos".'],
       ['é eleição de verdade?', 'não. É um jogo, sem nenhum vínculo com governo ou eleição real.'],
       ['e o app?', 'no celular, use "adicionar à tela inicial": vira app com ícone e tela cheia.'],
     ]) { const q = el('div', 'cs-q'); q.append(el('b', '', p), el('span', '', r)); duv.append(q); }

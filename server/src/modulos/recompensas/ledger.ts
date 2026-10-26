@@ -10,7 +10,7 @@ export type Concessao = {
   regraId: string;
   /** referência do fato que gerou (instância, missão do dia, definição de evento) — a chave final depende do escopo da regra */
   eventoRef: string;
-  origem: 'missao' | 'evento' | 'obra' | 'competicao';
+  origem: 'missao' | 'evento' | 'obra' | 'competicao' | 'instagram';
   streetId?: string | null;
   seasonId?: string | null;
   agora?: Date;

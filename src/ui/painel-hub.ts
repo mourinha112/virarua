@@ -40,8 +40,9 @@ export async function montarHub(c: HTMLElement, ctx: Ctx, abrir: (id: string, o?
   }));
   s1.append(b1);
   const como = el('details', 'hub-como'); como.append(el('summary', '', 'como a minha casa melhora?'));
-  for (const [ic, t] of [['✅', 'missões do dia: até +30 XP'], ['💼', 'trabalhar: +10 XP por dia'], ['🏗️', 'ajudar a obra da rua'], ['🤝', 'amigo que você convida e entra no jogo'], ['🎉', 'eventos da cidade e da semana']]) { const l = el('div', 'expl-p'); l.append(el('span', 'expl-ic', ic), el('span', '', t)); como.append(l); }
+  for (const [ic, t] of [['✅', 'missões do dia: +5 XP cada'], ['💼', 'trabalhar: +10 XP por dia'], ['💬', 'comentar num post do @viraruajogo: +5 XP por post/dia'], ['🤝', 'marcar @amigo que ganha a casa: +50 XP'], ['🏪', 'marcar o @ de uma loja do mapa: +10 XP'], ['🎉', 'eventos da cidade e da semana']]) { const l = el('div', 'expl-p'); l.append(el('span', 'expl-ic', ic), el('span', '', t)); como.append(l); }
   como.append(el('p', 'nota', 'a casa sobe de nível com o XP e nunca desce. Teto de 100 XP por dia para ninguém ganhar no cansaço.'));
+  como.append(botao('btn mini', '📊 meus pontos e extrato', () => abrir('pontos')));
   s1.append(como); c.append(s1);
 
   /* 1b) pet da casa */
