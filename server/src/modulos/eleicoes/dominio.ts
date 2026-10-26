@@ -83,7 +83,8 @@ export async function elegivelNoEscopo(c: Exec, userId: string, cargo: Cargo, es
   const u = await q1<{ status: string; suspenso_ate: Date | null; verificado_em: Date | null }>(`select status, suspenso_ate, verificado_em from users where id = $1`, [userId], c);
   if (!u || u.status !== 'ativo' || (u.suspenso_ate && u.suspenso_ate > instante)) return { ok: false, motivo: 'conta suspensa ou inativa não participa da eleição virtual' };
   if (!u.verificado_em || u.verificado_em.getTime() > instante.getTime() - regras.verificadoHoras * 3600_000)
-    return { ok: false, motivo: `a conta precisa estar verificada há pelo menos ${regras.verificadoHoras}h` };
+    return { ok: false, motivo: `a conta precisa estar verificada há pelo menos ${regras.verificadoHoras}h`
+      + (u.verificado_em ? ` · libera em ${new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(u.verificado_em.getTime() + regras.verificadoHoras * 3600_000))} (Brasília)` : '') };
   const esc = await escoposDoUsuario(c, userId);
   if (!esc) return { ok: false, motivo: 'é preciso ter uma casa reivindicada' };
   if (escopoIdDe(cargo, esc) !== escopoId) return { ok: false, motivo: 'você não mora neste lugar' };
