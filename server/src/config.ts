@@ -21,6 +21,8 @@ export const config = {
     /** token da conta oficial: guardado CRIPTOGRAFADO no banco (instagram_connections); a env só serve para bootstrap */
     tokenBootstrap: env('IG_TOKEN', ''),
     payloadMaxBytes: num('IG_PAYLOAD_MAX', 256 * 1024),
+    /** outro projeto no MESMO app da Meta (ex.: Céu de 2027): webhooks da conta dele são repassados, com a assinatura original */
+    repasse: { contaId: env('IG_REPASSE_CONTA_ID', ''), url: env('IG_REPASSE_URL', '') },
   },
   reivindicacao: {
     validadeLinkMin: num('CLAIM_LINK_MIN', 30),

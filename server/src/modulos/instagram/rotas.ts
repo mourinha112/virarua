@@ -27,6 +27,7 @@ async function receber(c: Context) {
   if (bruto.length > max) return c.json({ ok: false, erro: 'payload grande demais' }, 413);
   if (!assinaturaValida(bruto, c.req.header('x-hub-signature-256'), config.instagram.appSecret || '')) return c.json({ ok: false, erro: 'assinatura inválida' }, 401);
   let corpo: unknown; try { corpo = JSON.parse(bruto.toString('utf8')); } catch { return c.json({ ok: false, erro: 'json inválido' }, 400); }
+  repassar(corpo, bruto, c.req.header('x-hub-signature-256') || '');
   const { mudancas, ignoradas } = extrairComentarios(corpo);
   let novos = 0;
   if (mudancas.length) {
@@ -41,6 +42,18 @@ async function receber(c: Context) {
     });
   }
   return c.json({ ok: true, recebidos: mudancas.length, novos, ignorados: ignoradas });
+}
+
+/** o app da Meta só tem um endereço de webhook: eventos da conta do outro projeto (Céu de 2027) vão pra lá,
+    com o corpo bruto e a assinatura originais (o outro servidor confere com a mesma chave do app). Não bloqueia. */
+export function repassar(corpo: unknown, bruto: Buffer, assinatura: string) {
+  const { contaId, url } = config.instagram.repasse;
+  if (!contaId || !url) return false;
+  const objs = Array.isArray(corpo) ? corpo : [corpo];
+  if (!objs.some((o: any) => Array.isArray(o?.entry) && o.entry.some((e: any) => String(e?.id ?? '') === contaId))) return false;
+  void fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-hub-signature-256': assinatura }, body: new Uint8Array(bruto), signal: AbortSignal.timeout(8000) })
+    .catch((e) => console.error('[ig] repasse falhou', String(e?.message || e)));
+  return true;
 }
 
 export function registrar(app: App) {
